@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="w-full max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
               <div className="bg-primary/10 p-2 rounded-xl">
@@ -78,7 +78,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               exit={{ height: 0, opacity: 0 }}
               className="md:hidden border-t border-border/40 bg-background overflow-hidden"
             >
-              <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
+              <nav className="w-full max-w-[1600px] mx-auto px-6 py-4 flex flex-col gap-4">
                 {navLinks.map((link) => {
                   const isActive = location === link.href || (link.href !== "/" && location.startsWith(link.href));
                   const Icon = link.icon;

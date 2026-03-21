@@ -70,7 +70,7 @@ export default function Portfolio() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-6xl">
+    <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
         <div>

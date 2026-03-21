@@ -16,6 +16,20 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### `artifacts/tickertrack` (`@workspace/tickertrack`)
+
+React + Vite frontend-only MVP. No backend — all data is mock/localStorage.
+
+- Two core pages: `/` (Search + Landing), `/portfolio` (Portfolio tracker)
+- Theme: dark by default, toggle to light via `next-themes`
+- Layout: full-width `max-w-[1600px]` containers, no narrow centering
+- Hero: CSS animated dot-grid + glowing orb background (no image)
+- Portfolio: localStorage persistence, allocation pie chart, 30-day performance area chart
+- Charts: recharts (PieChart, AreaChart, LineChart)
+- Routing: wouter with BASE_URL prefix
+
 ## Structure
 
 ```text

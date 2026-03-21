@@ -63,17 +63,17 @@ export default function Home() {
     <div className="flex-1 w-full">
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b border-border/40">
-        <div className="absolute inset-0 z-0">
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="finance background"
-            className="w-full h-full object-cover opacity-60 mix-blend-screen"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
+        {/* Animated CSS Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="hero-dot-grid absolute inset-0" />
+          <div className="absolute top-[-15%] left-[5%] w-[700px] h-[700px] rounded-full bg-primary/10 blur-[130px] animate-pulse-slow" />
+          <div className="absolute top-[10%] right-[-8%] w-[500px] h-[500px] rounded-full bg-emerald-700/10 blur-[100px] animate-pulse-slow2" />
+          <div className="absolute bottom-[-20%] left-[35%] w-[600px] h-[600px] rounded-full bg-primary/6 blur-[150px] animate-pulse-slow" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/55 to-background" />
         </div>
 
-        <div className="container relative z-10 mx-auto px-4 py-20 lg:py-28 max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="w-full max-w-[1600px] relative z-10 mx-auto px-6 py-20 lg:py-28">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left: Copy + Search */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -156,7 +156,7 @@ export default function Home() {
 
       {/* Portfolio Features Section */}
       <div className="border-b border-border/40 bg-card/30">
-        <div className="container mx-auto px-4 py-16 max-w-6xl">
+        <div className="w-full max-w-[1600px] mx-auto px-6 py-16">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-4">
               <PieChart className="w-4 h-4" /> Portfolio Tracker
@@ -199,7 +199,7 @@ export default function Home() {
       </div>
 
       {/* Market Overview */}
-      <div id="market-section" className="container mx-auto px-4 py-16 max-w-6xl">
+      <div id="market-section" className="w-full max-w-[1600px] mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-display font-bold">
             {query ? `Results for "${query}"` : "Market Overview"}
