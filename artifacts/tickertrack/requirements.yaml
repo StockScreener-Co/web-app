@@ -1,0 +1,11 @@
+packages:
+  "framer-motion": "For smooth page transitions and interactive animations"
+  "recharts": "For rendering ticker price charts"
+  "next-themes": "For dark/light mode toggle support"
+images:
+  - path: "artifacts/tickertrack/public/images/hero-bg.png"
+    description: "Abstract deep dark background with subtle glowing neon green and deep blue geometric grid lines, professional finance style, 8k resolution, very minimal"
+    aspect_ratio: "16:9"
+notes:
+  - No backend required. All data is mocked.
+  - Portfolio is saved to localStorage.
