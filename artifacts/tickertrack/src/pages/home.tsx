@@ -7,6 +7,7 @@ import { TickerCard, InstrumentMostPopularDto } from "@/components/ticker-card";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useAuth } from "@/hooks/use-auth";
 
 const PORTFOLIO_DEMO = [
   { symbol: "AAPL", name: "Apple Inc.", shares: 10, avgPrice: 150, currentPrice: 175.43, color: "#22c55e" },
@@ -50,6 +51,7 @@ const FEATURES = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -100,7 +102,6 @@ export default function Home() {
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  const popularTags = ["AAPL", "TSLA", "NVDA", "MSFT", "BTC", "SPY"];
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -132,7 +133,7 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-md leading-relaxed">
-                Search stocks, ETFs, and crypto. Build a portfolio with real P&L tracking — no sign-up required.
+                Search stocks, ETFs, and crypto. Build a portfolio with real P&L tracking.
               </p>
 
               <div className="relative max-w-xl mb-4">
@@ -190,24 +191,11 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 mb-8">
-                <span className="text-sm text-muted-foreground">Popular:</span>
-                {popularTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => setQuery(tag)}
-                    className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground border border-border hover:border-primary hover:text-primary transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-
               <div className="flex gap-3">
-                <Link href="/portfolio">
+                <Link href={user ? "/portfolio" : "/auth"}>
                   <Button size="lg" className="rounded-xl shadow-lg shadow-primary/25 px-6">
                     <BarChart2 className="w-4 h-4 mr-2" />
-                    Build Portfolio
+                    {user ? "Go to Portfolio" : "Get Started"}
                   </Button>
                 </Link>
                 <Button size="lg" variant="outline" className="rounded-xl px-6" onClick={() => {
@@ -219,7 +207,7 @@ export default function Home() {
 
               <div className="mt-6 flex items-center gap-6 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> Free to use</span>
-                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> No sign-up</span>
+                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> {user ? "Logged in" : "Sync across devices"}</span>
                 <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-primary" /> Real-time data</span>
               </div>
             </motion.div>
@@ -272,9 +260,9 @@ export default function Home() {
           </div>
 
           <div className="mt-10 text-center">
-            <Link href="/portfolio">
+            <Link href={user ? "/portfolio" : "/auth"}>
               <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 px-8">
-                <Plus className="w-4 h-4 mr-2" /> Start Building Your Portfolio
+                <Plus className="w-4 h-4 mr-2" /> {user ? "Manage Portfolio" : "Start Building Your Portfolio"}
               </Button>
             </Link>
           </div>

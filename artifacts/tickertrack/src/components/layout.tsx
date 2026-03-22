@@ -1,13 +1,23 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./theme-provider";
-import { LineChart, Moon, Sun, Search, Briefcase, Menu, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { LineChart, Moon, Sun, Search, Briefcase, Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleTheme = () => {
@@ -56,6 +66,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-muted-foreground">
+                    {user.fullName || user.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => logout()} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/auth">
+                <Button variant="default" size="sm" className="rounded-full px-4">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Menu Toggle */}
@@ -63,6 +101,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
+            {user ? (
+              <Button variant="ghost" size="icon" onClick={() => logout()} className="rounded-full text-destructive">
+                <LogOut className="w-5 h-5" />
+              </Button>
+            ) : (
+              <Link href="/auth">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="w-5 h-5" />
+                </Button>
+              </Link>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>

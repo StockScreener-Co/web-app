@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePortfolio } from "@/hooks/use-portfolio";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import {
   Briefcase, ArrowUpRight, ArrowDownRight, Search, Trash2,
@@ -30,6 +31,7 @@ function generatePortfolioHistory(positions: any[]) {
 }
 
 export default function Portfolio() {
+  const { user } = useAuth();
   const { positions, stats, removePosition, addPosition } = usePortfolio();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ ticker: "", shares: "", avgPrice: "" });
@@ -67,6 +69,25 @@ export default function Portfolio() {
     addPosition(ticker, shares, avgPrice);
     setForm({ ticker: "", shares: "", avgPrice: "" });
     setShowAdd(false);
+  }
+
+  if (!user) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="bg-primary/10 p-6 rounded-full mb-6">
+          <Briefcase className="w-12 h-12 text-primary" />
+        </div>
+        <h2 className="text-3xl font-display font-bold mb-3 tracking-tight">Please sign in</h2>
+        <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
+          To manage your stock portfolio and track performance, you need to sign in to your account.
+        </p>
+        <Link href="/auth">
+          <Button size="lg" className="rounded-2xl px-8 h-12 shadow-xl shadow-primary/20 font-semibold">
+            Sign In or Register
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
