@@ -149,13 +149,8 @@ export default function Home() {
                       setIsSearchFocused(true);
                     }}
                     placeholder="Search stocks, ETFs… (AAPL, TSLA, BTC)"
-                    className="w-full border-0 bg-transparent text-base py-5 px-3 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 h-14"
+                    className="w-full border-0 bg-transparent text-base py-5 px-4 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 h-14"
                   />
-                  <div className="pr-2">
-                    <Button size="sm" className="rounded-xl shadow-sm shadow-primary/30">
-                      Search <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  </div>
                 </div>
 
                 {/* Search Results Dropdown */}

@@ -3,7 +3,7 @@ import { MOCK_TICKERS, generateChartData } from "@/lib/mock-data";
 import { useState, useMemo, useEffect } from "react";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Info, Activity, DollarSign, Loader2, Calendar, MapPin, Users, Briefcase, Building2 } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Info, Activity, DollarSign, Loader2, Calendar, MapPin, Users, Briefcase, Building2, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -265,15 +265,6 @@ export default function TickerDetail() {
                 {isMarketDataReal ? "Real-time Market Data" : "Mock Market Data • Delayed"}
               </p>
             </div>
-            
-            <Button 
-              size="lg" 
-              className="w-full sm:w-auto font-semibold shadow-lg shadow-primary/20"
-              onClick={openDialogWithCurrentPrice}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add to Portfolio
-            </Button>
           </div>
 
           {/* Chart */}
@@ -418,6 +409,33 @@ export default function TickerDetail() {
 
         {/* Sidebar - Right Side (1 col) */}
         <div className="space-y-6">
+          {/* Action Card */}
+          <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm ring-1 ring-primary/5">
+            <h3 className="text-lg font-display font-bold mb-4">Actions</h3>
+            <div className="flex flex-col gap-3">
+              <Button 
+                size="lg" 
+                className="w-full font-semibold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+                onClick={openDialogWithCurrentPrice}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add to Portfolio
+              </Button>
+              <Button 
+                variant="outline"
+                size="lg" 
+                className="w-full font-semibold border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                onClick={() => toast({ title: "Coming Soon", description: "Watchlist feature is under development." })}
+              >
+                <BookmarkPlus className="w-5 h-5 mr-2" />
+                Add to Watchlist
+              </Button>
+            </div>
+            <p className="text-[10px] text-center text-muted-foreground mt-4 leading-relaxed">
+              Track your investments and get real-time alerts by adding this ticker to your portfolio.
+            </p>
+          </div>
+
           <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
             <h3 className="text-xl font-display font-bold mb-6 flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" /> Key Statistics
