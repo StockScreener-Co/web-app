@@ -14,3 +14,26 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns a list of the most popular stocks
+ * @summary Get most popular stocks
+ */
+export const GetMostPopularStocksResponseItem = zod.object({
+  name: zod.string(),
+  price: zod.object({
+    symbol: zod.string(),
+    price: zod.number(),
+    currency: zod.string(),
+    todayChange: zod.object({
+      label: zod.string().optional(),
+      value: zod.string(),
+      change: zod.string().optional(),
+      isPositive: zod.boolean().optional(),
+    }),
+  }),
+  isDataComplete: zod.boolean(),
+});
+export const GetMostPopularStocksResponse = zod.array(
+  GetMostPopularStocksResponseItem,
+);

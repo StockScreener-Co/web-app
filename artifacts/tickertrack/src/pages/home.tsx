@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
-import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MOCK_TICKERS, searchTickers } from "@/lib/mock-data";
-import { TickerCard } from "@/components/ticker-card";
+import { searchTickers } from "@/lib/mock-data";
+import { TickerCard, InstrumentMostPopularDto } from "@/components/ticker-card";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -51,11 +51,34 @@ const FEATURES = [
 
 export default function Home() {
   const [query, setQuery] = useState("");
+  const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
+  const [isLoadingPopular, setIsLoadingPopular] = useState(false);
+
+  useEffect(() => {
+    async function fetchPopular() {
+      setIsLoadingPopular(true);
+      try {
+        const res = await fetch("/api/v1/stock-popularity/most-popular");
+        if (res.ok) {
+          const data = await res.json();
+          setPopularInstruments(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch popular instruments:", err);
+      } finally {
+        setIsLoadingPopular(false);
+      }
+    }
+
+    fetchPopular();
+  }, []);
 
   const results = useMemo(() => {
-    if (!query) return MOCK_TICKERS.slice(0, 8);
+    if (!query) return null;
     return searchTickers(query);
   }, [query]);
+
+  const displayData = query ? (results || []) : popularInstruments;
 
   const popularTags = ["AAPL", "TSLA", "NVDA", "MSFT", "BTC", "SPY"];
 
@@ -204,14 +227,19 @@ export default function Home() {
           <h2 className="text-2xl font-display font-bold">
             {query ? `Results for "${query}"` : "Market Overview"}
           </h2>
-          <span className="text-sm text-muted-foreground">{results.length} assets</span>
+          <span className="text-sm text-muted-foreground">{displayData.length} assets</span>
         </div>
 
-        {results.length > 0 ? (
+        {isLoadingPopular && !query ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+            <p className="text-muted-foreground">Loading popular instruments...</p>
+          </div>
+        ) : displayData.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {results.map((ticker, i) => (
+            {displayData.map((ticker, i) => (
               <motion.div
-                key={ticker.symbol}
+                key={'symbol' in ticker ? ticker.symbol : ticker.price.symbol}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

@@ -8,3 +8,23 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface MetricCard {
+  label?: string;
+  value: string;
+  change?: string;
+  isPositive?: boolean;
+}
+
+export interface CurrentPriceResponseDto {
+  symbol: string;
+  price: number;
+  currency: string;
+  todayChange: MetricCard;
+}
+
+export interface InstrumentMostPopularDto {
+  name: string;
+  price: CurrentPriceResponseDto;
+  isDataComplete: boolean;
+}

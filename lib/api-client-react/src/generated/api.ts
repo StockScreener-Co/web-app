@@ -13,7 +13,7 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type { HealthStatus, InstrumentMostPopularDto } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +92,82 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns a list of the most popular stocks
+ * @summary Get most popular stocks
+ */
+export const getGetMostPopularStocksUrl = () => {
+  return `/api/v1/stock-popularity/most-popular`;
+};
+
+export const getMostPopularStocks = async (
+  options?: RequestInit,
+): Promise<InstrumentMostPopularDto[]> => {
+  return customFetch<InstrumentMostPopularDto[]>(getGetMostPopularStocksUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMostPopularStocksQueryKey = () => {
+  return [`/api/v1/stock-popularity/most-popular`] as const;
+};
+
+export const getGetMostPopularStocksQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMostPopularStocks>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMostPopularStocks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMostPopularStocksQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMostPopularStocks>>
+  > = ({ signal }) => getMostPopularStocks({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMostPopularStocks>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMostPopularStocksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMostPopularStocks>>
+>;
+export type GetMostPopularStocksQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get most popular stocks
+ */
+
+export function useGetMostPopularStocks<
+  TData = Awaited<ReturnType<typeof getMostPopularStocks>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMostPopularStocks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMostPopularStocksQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

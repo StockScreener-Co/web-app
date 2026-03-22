@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./currentPriceResponseDto";
 export * from "./healthStatus";
+export * from "./instrumentMostPopularDto";
+export * from "./metricCard";

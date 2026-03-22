@@ -24,6 +24,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/stock-popularity/most-popular:
+    get:
+      operationId: getMostPopularStocks
+      tags: [stocks]
+      summary: Get most popular stocks
+      description: Returns a list of the most popular stocks
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InstrumentMostPopularDto"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +48,46 @@ components:
           type: string
       required:
         - status
+    InstrumentMostPopularDto:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          $ref: "#/components/schemas/CurrentPriceResponseDto"
+        isDataComplete:
+          type: boolean
+      required:
+        - name
+        - price
+        - isDataComplete
+    CurrentPriceResponseDto:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        todayChange:
+          $ref: "#/components/schemas/MetricCard"
+      required:
+        - symbol
+        - price
+        - currency
+        - todayChange
+    MetricCard:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        change:
+          type: string
+        isPositive:
+          type: boolean
+      required:
+        - value
 

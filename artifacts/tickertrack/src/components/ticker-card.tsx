@@ -2,11 +2,37 @@ import { TickerData } from "@/lib/mock-data";
 import { Link } from "wouter";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-export function TickerCard({ ticker }: { ticker: TickerData }) {
-  const isPositive = ticker.change >= 0;
+export interface InstrumentMostPopularDto {
+  name: string;
+  price: {
+    symbol: string;
+    price: number;
+    currency: string;
+    todayChange: {
+      label?: string;
+      value: string;
+      change?: string;
+      isPositive?: boolean;
+    };
+  };
+  isDataComplete: boolean;
+}
+
+export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopularDto }) {
+  const isDto = 'isDataComplete' in ticker;
+  
+  const symbol = isDto ? ticker.price.symbol : ticker.symbol;
+  const name = ticker.name;
+  const price = isDto ? ticker.price.price : ticker.price;
+  const isPositive = isDto 
+    ? (ticker.price.todayChange.isPositive ?? true)
+    : ticker.change >= 0;
+  const changeLabel = isDto 
+    ? `${ticker.price.todayChange.value} (${ticker.price.todayChange.change ?? ''})`
+    : `${isPositive ? '+' : ''}${ticker.change.toFixed(2)} (${isPositive ? '+' : ''}${ticker.changePercent.toFixed(2)}%)`;
 
   return (
-    <Link href={`/ticker/${ticker.symbol}`} className="block group">
+    <Link href={`/ticker/${symbol}`} className="block group">
       <div className="
         h-full bg-card rounded-2xl p-6
         border border-border/50
@@ -17,10 +43,10 @@ export function TickerCard({ ticker }: { ticker: TickerData }) {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="font-display font-bold text-xl text-foreground group-hover:text-primary transition-colors">
-              {ticker.symbol}
+              {symbol}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-              {ticker.name}
+              {name}
             </p>
           </div>
           <div className={`p-2 rounded-lg ${isPositive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
@@ -31,10 +57,10 @@ export function TickerCard({ ticker }: { ticker: TickerData }) {
         <div className="flex items-end justify-between mt-6">
           <div>
             <div className="text-2xl font-bold font-display tracking-tight text-foreground">
-              ${ticker.price.toFixed(2)}
+              ${price.toFixed(2)}
             </div>
             <div className={`text-sm font-medium mt-1 flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
-              {isPositive ? '+' : ''}{ticker.change.toFixed(2)} ({isPositive ? '+' : ''}{ticker.changePercent.toFixed(2)}%)
+              {changeLabel}
             </div>
           </div>
         </div>
