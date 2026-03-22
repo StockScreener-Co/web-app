@@ -184,7 +184,7 @@ export default function TickerDetail() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-48 text-center flex flex-col items-center">
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-48 text-center flex flex-col items-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="text-xl text-muted-foreground">Loading ticker details...</p>
       </div>
@@ -193,7 +193,7 @@ export default function TickerDetail() {
 
   if (!ticker) {
     return (
-      <div className="container mx-auto px-4 py-24 text-center">
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-24 text-center">
         <h2 className="text-2xl font-bold mb-4">Ticker not found</h2>
         <Link href="/" className="text-primary hover:underline flex items-center justify-center gap-2">
           <ArrowLeft className="w-4 h-4" /> Back to Search
@@ -237,7 +237,7 @@ export default function TickerDetail() {
   const isMarketDataReal = tickerApiData && ticker.price > 0;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="w-full max-w-[1600px] mx-auto px-6 py-8">
       <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8">
         <ArrowLeft className="w-4 h-4" /> Back to Search
       </Link>
