@@ -18,7 +18,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/portfolio" component={Portfolio} />
-        <Route path="/ticker/:symbol" component={TickerDetail} />
+        <Route path="/ticker/:idOrSymbol" component={TickerDetail} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

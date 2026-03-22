@@ -18,21 +18,31 @@ export interface InstrumentMostPopularDto {
   isDataComplete: boolean;
 }
 
-export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopularDto }) {
+export interface InstrumentDto {
+  id: string;
+  symbol: string;
+  name: string;
+  currency: string;
+}
+
+export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopularDto | InstrumentDto }) {
   const isDto = 'isDataComplete' in ticker;
+  const isSearchDto = 'id' in ticker && !isDto;
   
-  const symbol = isDto ? ticker.price.symbol : ticker.symbol;
+  const symbol = isSearchDto ? ticker.symbol : (isDto ? ticker.price.symbol : ticker.symbol);
   const name = ticker.name;
-  const price = isDto ? ticker.price.price : ticker.price;
-  const isPositive = isDto 
+  const price = isSearchDto ? 0 : (isDto ? ticker.price.price : ticker.price);
+  const isPositive = isSearchDto ? true : (isDto 
     ? (ticker.price.todayChange.isPositive ?? true)
-    : ticker.change >= 0;
-  const changeLabel = isDto 
+    : ticker.change >= 0);
+  const changeLabel = isSearchDto ? ticker.currency : (isDto 
     ? `${ticker.price.todayChange.value} (${ticker.price.todayChange.change ?? ''})`
-    : `${isPositive ? '+' : ''}${ticker.change.toFixed(2)} (${isPositive ? '+' : ''}${ticker.changePercent.toFixed(2)}%)`;
+    : `${isPositive ? '+' : ''}${ticker.change.toFixed(2)} (${isPositive ? '+' : ''}${ticker.changePercent.toFixed(2)}%)`);
+
+  const href = isSearchDto ? `/ticker/${ticker.id}` : `/ticker/${symbol}`;
 
   return (
-    <Link href={`/ticker/${symbol}`} className="block group">
+    <Link href={href} className="block group">
       <div className="
         h-full bg-card rounded-2xl p-6
         border border-border/50
@@ -56,9 +66,11 @@ export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopu
 
         <div className="flex items-end justify-between mt-6">
           <div>
-            <div className="text-2xl font-bold font-display tracking-tight text-foreground">
-              ${price.toFixed(2)}
-            </div>
+            {!isSearchDto && (
+              <div className="text-2xl font-bold font-display tracking-tight text-foreground">
+                ${price.toFixed(2)}
+              </div>
+            )}
             <div className={`text-sm font-medium mt-1 flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
               {changeLabel}
             </div>

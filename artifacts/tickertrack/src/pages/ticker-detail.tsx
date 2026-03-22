@@ -1,29 +1,129 @@
 import { useParams, Link } from "wouter";
 import { MOCK_TICKERS, generateChartData } from "@/lib/mock-data";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Info, Activity, DollarSign, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Info, Activity, DollarSign, Loader2, Calendar, MapPin, Users, Briefcase, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+interface MetricCard {
+  value: number;
+  ratio: number;
+  trend: "UP" | "DOWN" | "FLAT";
+}
+
+interface CurrentPriceResponseDto {
+  symbol: string;
+  price: number;
+  currency: string;
+  todayChange: MetricCard;
+}
+
+interface TickerPageView {
+  instrumentId: string;
+  profile: {
+    name: string;
+    founded: string;
+    sector: string;
+    industry: string;
+    employeesNumber: string;
+    ceoFullName: string;
+    details: { description: string };
+  };
+  keyStats: {
+    marketCap: number;
+    peRatio: number;
+    epsTtm: number;
+    High52W: number;
+    Low52W: number;
+  };
+}
+
 export default function TickerDetail() {
-  const { symbol } = useParams();
+  const { idOrSymbol } = useParams();
   const { addPosition } = usePortfolio();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
+  const [tickerApiData, setTickerApiData] = useState<TickerPageView | null>(null);
+  const [priceData, setPriceData] = useState<CurrentPriceResponseDto | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
 
-  const ticker = useMemo(() => MOCK_TICKERS.find(t => t.symbol === symbol), [symbol]);
+  useEffect(() => {
+    // Check if it looks like a UUID (approximate check)
+    const isUuid = idOrSymbol?.includes("-");
+    
+    if (isUuid) {
+      setIsLoading(true);
+      setIsPriceLoading(true);
+      
+      fetch(`/api/v1/instruments/${idOrSymbol}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          setTickerApiData(data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch ticker details:", err);
+          setIsLoading(false);
+        });
+
+      fetch(`/api/v1/prices/now/instrument/${idOrSymbol}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          setPriceData(data);
+          setIsPriceLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch ticker price:", err);
+          setIsPriceLoading(false);
+        });
+    } else {
+      setTickerApiData(null);
+      setPriceData(null);
+    }
+  }, [idOrSymbol]);
+
+  const ticker = useMemo(() => {
+    if (tickerApiData) {
+      const mockMatch = MOCK_TICKERS.find(t => t.name === tickerApiData.profile.name);
+      
+      return {
+        symbol: priceData?.symbol || mockMatch?.symbol || tickerApiData.profile.name.split(' ')[0].toUpperCase(),
+        name: tickerApiData.profile.name,
+        price: priceData?.price || mockMatch?.price || 0,
+        change: priceData?.todayChange?.value || mockMatch?.change || 0,
+        changePercent: priceData?.todayChange?.ratio || mockMatch?.changePercent || 0,
+        currency: priceData?.currency || "USD",
+        about: tickerApiData.profile.details.description,
+        marketCap: tickerApiData.keyStats.marketCap.toLocaleString(),
+        peRatio: tickerApiData.keyStats.peRatio,
+        week52High: tickerApiData.keyStats.High52W,
+        week52Low: tickerApiData.keyStats.Low52W,
+      };
+    }
+    return MOCK_TICKERS.find(t => t.symbol === idOrSymbol);
+  }, [idOrSymbol, tickerApiData, priceData]);
   
   const chartData = useMemo(() => {
-    if (!ticker) return [];
+    if (!ticker || ticker.price === 0) return [];
     return generateChartData(ticker.price, 0.03, 30);
   }, [ticker]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-48 text-center flex flex-col items-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-xl text-muted-foreground">Loading ticker details...</p>
+      </div>
+    );
+  }
 
   if (!ticker) {
     return (
@@ -37,7 +137,7 @@ export default function TickerDetail() {
   }
 
   const isPositive = ticker.change >= 0;
-  const chartColor = isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))';
+  const chartColor = ticker.price > 0 ? (isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))') : 'hsl(var(--primary))';
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +168,8 @@ export default function TickerDetail() {
     setIsDialogOpen(true);
   };
 
+  const isMarketDataReal = tickerApiData && ticker.price > 0;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8">
@@ -86,12 +188,16 @@ export default function TickerDetail() {
               </div>
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold tracking-tighter">${ticker.price.toFixed(2)}</span>
-                <span className={`text-lg font-medium flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                  {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                  {isPositive ? '+' : ''}{ticker.change.toFixed(2)} ({isPositive ? '+' : ''}{ticker.changePercent.toFixed(2)}%)
-                </span>
+                {ticker.price > 0 && (
+                  <span className={`text-lg font-medium flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                    {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                    {isPositive ? '+' : ''}{ticker.change.toFixed(2)} ({isPositive ? '+' : ''}{ticker.changePercent.toFixed(2)}%)
+                  </span>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">Mock Market Data • Delayed</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isMarketDataReal ? "Real-time Market Data" : "Mock Market Data • Delayed"}
+              </p>
             </div>
             
             <Button 
@@ -153,9 +259,59 @@ export default function TickerDetail() {
             <h3 className="text-xl font-display font-bold mb-4 flex items-center gap-2">
               <Info className="w-5 h-5 text-primary" /> About {ticker.name}
             </h3>
-            <p className="text-muted-foreground leading-relaxed text-lg">
+            <p className="text-muted-foreground leading-relaxed text-lg mb-6">
               {ticker.about}
             </p>
+
+            {tickerApiData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Founded</p>
+                    <p className="font-medium">{tickerApiData.profile.founded}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Sector</p>
+                    <p className="font-medium">{tickerApiData.profile.sector}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Industry</p>
+                    <p className="font-medium">{tickerApiData.profile.industry}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Employees</p>
+                    <p className="font-medium">{tickerApiData.profile.employeesNumber}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">CEO</p>
+                    <p className="font-medium">{tickerApiData.profile.ceoFullName}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -167,8 +323,14 @@ export default function TickerDetail() {
             </h3>
             <div className="space-y-4">
               <StatRow label="Market Cap" value={ticker.marketCap} icon={DollarSign} />
-              <StatRow label="Volume" value={ticker.volume} icon={BarChart3} />
-              <StatRow label="P/E Ratio" value={ticker.peRatio > 0 ? ticker.peRatio.toFixed(2) : 'N/A'} />
+              <StatRow 
+                label="P/E Ratio" 
+                value={ticker.peRatio !== undefined ? (typeof ticker.peRatio === 'number' ? ticker.peRatio.toFixed(2) : ticker.peRatio) : 'N/A'} 
+              />
+              <StatRow 
+                label="EPS (TTM)" 
+                value={tickerApiData ? `$${tickerApiData.keyStats.epsTtm.toFixed(2)}` : 'N/A'} 
+              />
               <StatRow label="52W High" value={`$${ticker.week52High.toFixed(2)}`} />
               <StatRow label="52W Low" value={`$${ticker.week52Low.toFixed(2)}`} />
             </div>

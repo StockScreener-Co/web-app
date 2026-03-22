@@ -52,7 +52,9 @@ const FEATURES = [
 export default function Home() {
   const [query, setQuery] = useState("");
   const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   useEffect(() => {
     async function fetchPopular() {
@@ -73,17 +75,37 @@ export default function Home() {
     fetchPopular();
   }, []);
 
-  const results = useMemo(() => {
-    if (!query) return null;
-    return searchTickers(query);
-  }, [query]);
+  useEffect(() => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsLoadingSearch(false);
+      return;
+    }
 
-  const displayData = query ? (results || []) : popularInstruments;
+    setIsLoadingSearch(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [query]);
 
   const popularTags = ["AAPL", "TSLA", "NVDA", "MSFT", "BTC", "SPY"];
 
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
   return (
-    <div className="flex-1 w-full">
+    <div className="flex-1 w-full" onClick={() => setIsSearchFocused(false)}>
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b border-border/40">
         {/* Animated CSS Background */}
@@ -114,11 +136,18 @@ export default function Home() {
               </p>
 
               <div className="relative max-w-xl mb-4">
-                <div className="relative flex items-center bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                <div 
+                  className="relative flex items-center bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 transition-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Search className="w-5 h-5 text-muted-foreground ml-4 flex-shrink-0" />
                   <Input
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setIsSearchFocused(true);
+                    }}
                     placeholder="Search stocks, ETFs… (AAPL, TSLA, BTC)"
                     className="w-full border-0 bg-transparent text-base py-5 px-3 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 h-14"
                   />
@@ -128,6 +157,42 @@ export default function Home() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Search Results Dropdown */}
+                {isSearchFocused && query.trim() && (
+                  <div 
+                    className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden max-h-[400px] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {isLoadingSearch ? (
+                      <div className="p-8 text-center">
+                        <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Searching...</p>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div className="overflow-y-auto py-2">
+                        {searchResults.map((item) => (
+                          <Link 
+                            key={item.id} 
+                            href={`/ticker/${item.id}`}
+                            className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                            onClick={() => setIsSearchFocused(false)}
+                          >
+                            <div>
+                              <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.symbol}</div>
+                              <div className="text-xs text-muted-foreground">{item.name}</div>
+                            </div>
+                            <div className="text-xs font-medium text-muted-foreground uppercase">{item.currency}</div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center">
+                        <p className="text-sm text-muted-foreground">No results found for "{query}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mb-8">
@@ -224,22 +289,20 @@ export default function Home() {
       {/* Market Overview */}
       <div id="market-section" className="w-full max-w-[1600px] mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-display font-bold">
-            {query ? `Results for "${query}"` : "Market Overview"}
-          </h2>
-          <span className="text-sm text-muted-foreground">{displayData.length} assets</span>
+          <h2 className="text-2xl font-display font-bold">Market Overview</h2>
+          <span className="text-sm text-muted-foreground">{popularInstruments.length} assets</span>
         </div>
 
-        {isLoadingPopular && !query ? (
+        {isLoadingPopular ? (
           <div className="flex flex-col items-center justify-center py-24">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
             <p className="text-muted-foreground">Loading popular instruments...</p>
           </div>
-        ) : displayData.length > 0 ? (
+        ) : popularInstruments.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayData.map((ticker, i) => (
+            {popularInstruments.map((ticker, i) => (
               <motion.div
-                key={'symbol' in ticker ? ticker.symbol : ticker.price.symbol}
+                key={'id' in ticker ? ticker.id : ('symbol' in ticker ? ticker.symbol : ticker.price.symbol)}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -251,14 +314,11 @@ export default function Home() {
           </div>
         ) : (
           <div className="text-center py-24 bg-card/50 rounded-3xl border border-border/50 border-dashed">
-            <Search className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">No tickers found</h3>
+            <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">No data available</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Try searching for AAPL, MSFT, or BTC.
+              Check back later for market updates.
             </p>
-            <button onClick={() => setQuery("")} className="mt-5 text-primary hover:underline font-medium text-sm">
-              Clear search
-            </button>
           </div>
         )}
       </div>

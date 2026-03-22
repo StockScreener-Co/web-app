@@ -5,7 +5,6 @@ export interface TickerData {
   change: number;
   changePercent: number;
   marketCap: string;
-  volume: string;
   peRatio: number;
   week52High: number;
   week52Low: number;
@@ -20,7 +19,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 4.35,
     changePercent: 2.54,
     marketCap: "2.8T",
-    volume: "54.2M",
     peRatio: 28.5,
     week52High: 198.23,
     week52Low: 143.90,
@@ -33,7 +31,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: -3.12,
     changePercent: -1.23,
     marketCap: "780B",
-    volume: "102.5M",
     peRatio: 45.2,
     week52High: 299.29,
     week52Low: 152.37,
@@ -46,7 +43,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 26.15,
     changePercent: 3.45,
     marketCap: "1.9T",
-    volume: "48.1M",
     peRatio: 65.8,
     week52High: 823.94,
     week52Low: 204.21,
@@ -59,7 +55,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 2.51,
     changePercent: 0.67,
     marketCap: "2.9T",
-    volume: "22.3M",
     peRatio: 35.1,
     week52High: 384.30,
     week52Low: 245.61,
@@ -72,7 +67,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: -1.00,
     changePercent: -0.65,
     marketCap: "1.6T",
-    volume: "41.8M",
     peRatio: 41.2,
     week52High: 155.63,
     week52Low: 88.12,
@@ -85,7 +79,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 1.55,
     changePercent: 1.12,
     marketCap: "1.8T",
-    volume: "25.6M",
     peRatio: 24.3,
     week52High: 141.22,
     week52Low: 88.58,
@@ -98,7 +91,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 14.18,
     changePercent: 2.89,
     marketCap: "1.3T",
-    volume: "18.4M",
     peRatio: 31.7,
     week52High: 512.20,
     week52Low: 167.66,
@@ -111,7 +103,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 1.70,
     changePercent: 0.34,
     marketCap: "480B",
-    volume: "65.2M",
     peRatio: 0,
     week52High: 503.50,
     week52Low: 380.65,
@@ -124,7 +115,6 @@ export const MOCK_TICKERS: TickerData[] = [
     change: 1250.20,
     changePercent: 1.98,
     marketCap: "1.2T",
-    volume: "35.2B",
     peRatio: 0,
     week52High: 69000.00,
     week52Low: 25000.00,
