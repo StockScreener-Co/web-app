@@ -16,6 +16,38 @@ interface MetricCard {
   trend: "UP" | "DOWN" | "FLAT";
 }
 
+enum ChartPeriod {
+  ONE_DAY = "ONE_DAY",
+  FIVE_DAYS = "FIVE_DAYS",
+  ONE_MONTH = "ONE_MONTH",
+  YTD = "YTD",
+  THREE_MONTHS = "THREE_MONTHS",
+  SIX_MONTHS = "SIX_MONTHS",
+  ONE_YEAR = "ONE_YEAR",
+  FIVE_YEARS = "FIVE_YEARS",
+  ALL = "ALL"
+}
+
+enum ChartInterval {
+  ONE_MINUTE = "ONE_MINUTE",
+  TEN_MINUTES = "TEN_MINUTES",
+  ONE_DAY = "ONE_DAY",
+  ONE_WEEK = "ONE_WEEK"
+}
+
+interface ChartPointDto {
+  timestamp: string;
+  price: number;
+}
+
+interface PriceHistoryChartResponse {
+  symbol: string;
+  currency: string;
+  period: ChartPeriod;
+  interval: ChartInterval;
+  points: ChartPointDto[];
+}
+
 interface CurrentPriceResponseDto {
   symbol: string;
   price: number;
@@ -54,6 +86,9 @@ export default function TickerDetail() {
   const [priceData, setPriceData] = useState<CurrentPriceResponseDto | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>(ChartPeriod.ONE_MONTH);
+  const [chartHistory, setChartHistory] = useState<PriceHistoryChartResponse | null>(null);
+  const [isChartLoading, setIsChartLoading] = useState(false);
 
   useEffect(() => {
     // Check if it looks like a UUID (approximate check)
@@ -90,6 +125,25 @@ export default function TickerDetail() {
     }
   }, [idOrSymbol]);
 
+  useEffect(() => {
+    const isUuid = idOrSymbol?.includes("-");
+    if (isUuid) {
+      setIsChartLoading(true);
+      fetch(`/api/v1/prices/price-chart/instrument/${idOrSymbol}?period=${selectedPeriod}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          setChartHistory(data);
+          setIsChartLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch chart history:", err);
+          setIsChartLoading(false);
+        });
+    } else {
+      setChartHistory(null);
+    }
+  }, [idOrSymbol, selectedPeriod]);
+
   const ticker = useMemo(() => {
     if (tickerApiData) {
       const mockMatch = MOCK_TICKERS.find(t => t.name === tickerApiData.profile.name);
@@ -112,9 +166,21 @@ export default function TickerDetail() {
   }, [idOrSymbol, tickerApiData, priceData]);
   
   const chartData = useMemo(() => {
+    if (chartHistory && chartHistory.points) {
+      return chartHistory.points.map(point => ({
+        date: new Date(point.timestamp).toLocaleDateString(undefined, { 
+          month: 'short', 
+          day: 'numeric',
+          hour: selectedPeriod === ChartPeriod.ONE_DAY ? '2-digit' : undefined,
+          minute: selectedPeriod === ChartPeriod.ONE_DAY ? '2-digit' : undefined
+        }),
+        price: point.price,
+        fullTimestamp: point.timestamp
+      }));
+    }
     if (!ticker || ticker.price === 0) return [];
     return generateChartData(ticker.price, 0.03, 30);
-  }, [ticker]);
+  }, [ticker, chartHistory, selectedPeriod]);
 
   if (isLoading) {
     return (
@@ -211,47 +277,82 @@ export default function TickerDetail() {
           </div>
 
           {/* Chart */}
-          <div className="bg-card border border-border/50 rounded-2xl p-6 h-[400px] shadow-sm">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  minTickGap={30}
-                />
-                <YAxis 
-                  domain={['dataMin - 10', 'auto']} 
-                  stroke="hsl(var(--muted-foreground))" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <RechartsTooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    borderColor: 'hsl(var(--border))',
-                    borderRadius: '0.75rem',
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                  itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke={chartColor} 
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 6, fill: chartColor, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" /> Price Chart
+              </h3>
+              <div className="flex bg-muted/50 p-1 rounded-lg overflow-x-auto no-scrollbar">
+                {(Object.keys(ChartPeriod) as Array<keyof typeof ChartPeriod>).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setSelectedPeriod(ChartPeriod[period])}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${
+                      selectedPeriod === ChartPeriod[period]
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {period === "ONE_DAY" ? "1D" :
+                     period === "FIVE_DAYS" ? "5D" :
+                     period === "ONE_MONTH" ? "1M" :
+                     period === "THREE_MONTHS" ? "3M" :
+                     period === "SIX_MONTHS" ? "6M" :
+                     period === "YTD" ? "YTD" :
+                     period === "ONE_YEAR" ? "1Y" :
+                     period === "FIVE_YEARS" ? "5Y" : "ALL"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-[350px] relative">
+              {isChartLoading && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={30}
+                  />
+                  <YAxis 
+                    domain={['auto', 'auto']} 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <RechartsTooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '0.75rem',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="price" 
+                    stroke={chartColor} 
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6, fill: chartColor, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           {/* About */}
