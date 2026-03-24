@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { MOCK_TICKERS } from '@/lib/mock-data';
 
 export interface PortfolioItem {
   id: string;
@@ -9,7 +8,7 @@ export interface PortfolioItem {
   dateAdded: string;
 }
 
-const STORAGE_KEY = 'tickertrack_portfolio';
+const STORAGE_KEY = 'ss_portfolio';
 
 export function usePortfolio() {
   const [positions, setPositions] = useState<PortfolioItem[]>(() => {
@@ -43,13 +42,7 @@ export function usePortfolio() {
 
   // Enriched data
   const enrichedPositions = positions.map(pos => {
-    const tickerData = MOCK_TICKERS.find(t => t.symbol === pos.symbol) || {
-      name: 'Unknown',
-      price: pos.avgPrice,
-      changePercent: 0
-    };
-    
-    const currentPrice = tickerData.price;
+    const currentPrice = pos.avgPrice; // Fallback to avgPrice if we don't have current price
     const currentValue = pos.shares * currentPrice;
     const totalCost = pos.shares * pos.avgPrice;
     const totalReturn = currentValue - totalCost;
@@ -57,13 +50,13 @@ export function usePortfolio() {
 
     return {
       ...pos,
-      name: tickerData.name,
+      name: pos.symbol,
       currentPrice,
       currentValue,
       totalCost,
       totalReturn,
       totalReturnPercent,
-      dayChangePercent: tickerData.changePercent
+      dayChangePercent: 0
     };
   });
 

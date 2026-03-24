@@ -14,3 +14,145 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Get portfolios
+ */
+export const GetPortfoliosResponseItem = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string(),
+});
+export const GetPortfoliosResponse = zod.array(GetPortfoliosResponseItem);
+
+/**
+ * @summary Create portfolio
+ */
+export const createPortfolioBodyNameMax = 100;
+
+export const CreatePortfolioBody = zod.object({
+  name: zod.string().max(createPortfolioBodyNameMax),
+});
+
+export const CreatePortfolioResponse = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string(),
+});
+
+/**
+ * @summary Get my portfolios
+ */
+export const GetMyPortfoliosResponseItem = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string(),
+});
+export const GetMyPortfoliosResponse = zod.array(GetMyPortfoliosResponseItem);
+
+/**
+ * @summary Get portfolio by id
+ */
+export const GetPortfolioByIdParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const GetPortfolioByIdResponse = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string(),
+  assets: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      instrumentId: zod.string().uuid(),
+      symbol: zod.string(),
+      name: zod.string(),
+      qty: zod.number(),
+      avgPrice: zod.number(),
+      weight: zod.number(),
+      value: zod.number(),
+      currentPrice: zod.number(),
+      unrealizedPL: zod.object({
+        value: zod.number(),
+        ratio: zod.number(),
+        trend: zod.enum(["UP", "DOWN", "FLAT"]),
+      }),
+      todayChange: zod.object({
+        value: zod.number(),
+        ratio: zod.number(),
+        trend: zod.enum(["UP", "DOWN", "FLAT"]),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Delete portfolio
+ */
+export const DeletePortfolioParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+/**
+ * Returns a list of the most popular stocks
+ * @summary Get most popular stocks
+ */
+export const GetMostPopularStocksResponseItem = zod.object({
+  name: zod.string(),
+  price: zod.object({
+    symbol: zod.string(),
+    price: zod.number(),
+    currency: zod.string(),
+    todayChange: zod.object({
+      label: zod.string().optional(),
+      value: zod.string(),
+      change: zod.string().optional(),
+      isPositive: zod.boolean().optional(),
+    }),
+  }),
+  isDataComplete: zod.boolean(),
+});
+export const GetMostPopularStocksResponse = zod.array(
+  GetMostPopularStocksResponseItem,
+);
+
+/**
+ * @summary Create transaction for portfolio
+ */
+export const CreateTransactionParams = zod.object({
+  portfolioId: zod.coerce.string().uuid(),
+});
+
+export const CreateTransactionBody = zod.object({
+  instrumentId: zod.string().uuid(),
+  tradeDate: zod.date(),
+  price: zod.number(),
+  operationType: zod.enum(["BUY", "SELL", "DIVIDEND", "DEPOSIT", "WITHDRAWAL"]),
+  quantity: zod.number(),
+});
+
+export const CreateTransactionResponse = zod.object({
+  id: zod.string().uuid(),
+  quantity: zod.number(),
+  price: zod.number(),
+  tradeDate: zod.date(),
+  operationType: zod.enum(["BUY", "SELL", "DIVIDEND", "DEPOSIT", "WITHDRAWAL"]),
+  symbol: zod.string(),
+});
+
+/**
+ * @summary Search instruments
+ */
+export const searchInstrumentsQueryLimitDefault = 10;
+
+export const SearchInstrumentsQueryParams = zod.object({
+  query: zod.coerce.string(),
+  limit: zod.coerce.number().default(searchInstrumentsQueryLimitDefault),
+});
+
+export const SearchInstrumentsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  symbol: zod.string(),
+  name: zod.string(),
+  type: zod.string().optional(),
+  currency: zod.string().optional(),
+});
+export const SearchInstrumentsResponse = zod.array(
+  SearchInstrumentsResponseItem,
+);

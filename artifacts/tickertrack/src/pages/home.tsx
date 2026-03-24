@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
-import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MOCK_TICKERS, searchTickers } from "@/lib/mock-data";
-import { TickerCard } from "@/components/ticker-card";
+import { TickerCard, InstrumentMostPopularDto } from "@/components/ticker-card";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useAuth } from "@/hooks/use-auth";
+import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 
 const PORTFOLIO_DEMO = [
   { symbol: "AAPL", name: "Apple Inc.", shares: 10, avgPrice: 150, currentPrice: 175.43, color: "#22c55e" },
@@ -50,17 +51,63 @@ const FEATURES = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+  const { lastPortfolioId } = useLastPortfolio();
   const [query, setQuery] = useState("");
+  const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isLoadingPopular, setIsLoadingPopular] = useState(false);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
-  const results = useMemo(() => {
-    if (!query) return MOCK_TICKERS.slice(0, 8);
-    return searchTickers(query);
+  useEffect(() => {
+    async function fetchPopular() {
+      setIsLoadingPopular(true);
+      try {
+        const res = await fetch("/api/v1/stock-popularity/most-popular");
+        if (res.ok) {
+          const data = await res.json();
+          setPopularInstruments(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch popular instruments:", err);
+      } finally {
+        setIsLoadingPopular(false);
+      }
+    }
+
+    fetchPopular();
+  }, []);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsLoadingSearch(false);
+      return;
+    }
+
+    setIsLoadingSearch(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [query]);
 
-  const popularTags = ["AAPL", "TSLA", "NVDA", "MSFT", "BTC", "SPY"];
+
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   return (
-    <div className="flex-1 w-full">
+    <div className="flex-1 w-full" onClick={() => setIsSearchFocused(false)}>
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b border-border/40">
         {/* Animated CSS Background */}
@@ -87,44 +134,69 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-md leading-relaxed">
-                Search stocks, ETFs, and crypto. Build a portfolio with real P&L tracking — no sign-up required.
+                Search stocks, ETFs, and crypto. Build a portfolio with real P&L tracking.
               </p>
 
               <div className="relative max-w-xl mb-4">
-                <div className="relative flex items-center bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                <div 
+                  className="relative flex items-center bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 transition-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Search className="w-5 h-5 text-muted-foreground ml-4 flex-shrink-0" />
                   <Input
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setIsSearchFocused(true);
+                    }}
                     placeholder="Search stocks, ETFs… (AAPL, TSLA, BTC)"
-                    className="w-full border-0 bg-transparent text-base py-5 px-3 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 h-14"
+                    className="w-full border-0 bg-transparent text-base py-5 px-4 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 h-14"
                   />
-                  <div className="pr-2">
-                    <Button size="sm" className="rounded-xl shadow-sm shadow-primary/30">
-                      Search <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2 mb-8">
-                <span className="text-sm text-muted-foreground">Popular:</span>
-                {popularTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => setQuery(tag)}
-                    className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground border border-border hover:border-primary hover:text-primary transition-colors"
+                {/* Search Results Dropdown */}
+                {isSearchFocused && query.trim() && (
+                  <div 
+                    className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden max-h-[400px] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {tag}
-                  </button>
-                ))}
+                    {isLoadingSearch ? (
+                      <div className="p-8 text-center">
+                        <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Searching...</p>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div className="overflow-y-auto py-2">
+                        {searchResults.map((item) => (
+                          <Link 
+                            key={item.id} 
+                            href={`/ticker/${item.id}`}
+                            className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                            onClick={() => setIsSearchFocused(false)}
+                          >
+                            <div>
+                              <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.symbol}</div>
+                              <div className="text-xs text-muted-foreground">{item.name}</div>
+                            </div>
+                            <div className="text-xs font-medium text-muted-foreground uppercase">{item.currency}</div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center">
+                        <p className="text-sm text-muted-foreground">No results found for "{query}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
-                <Link href="/portfolio">
+                <Link href={user ? (lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio") : "/auth"}>
                   <Button size="lg" className="rounded-xl shadow-lg shadow-primary/25 px-6">
                     <BarChart2 className="w-4 h-4 mr-2" />
-                    Build Portfolio
+                    {user ? "Go to Portfolio" : "Get Started"}
                   </Button>
                 </Link>
                 <Button size="lg" variant="outline" className="rounded-xl px-6" onClick={() => {
@@ -136,7 +208,7 @@ export default function Home() {
 
               <div className="mt-6 flex items-center gap-6 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> Free to use</span>
-                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> No sign-up</span>
+                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> {user ? "Logged in" : "Sync across devices"}</span>
                 <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-primary" /> Real-time data</span>
               </div>
             </motion.div>
@@ -148,7 +220,7 @@ export default function Home() {
               transition={{ duration: 0.55, delay: 0.1 }}
               className="hidden lg:block"
             >
-              <PortfolioDemoWidget />
+              <PortfolioDemoWidget user={user} lastPortfolioId={lastPortfolioId} />
             </motion.div>
           </div>
         </div>
@@ -189,9 +261,9 @@ export default function Home() {
           </div>
 
           <div className="mt-10 text-center">
-            <Link href="/portfolio">
+            <Link href={user ? (lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio") : "/auth"}>
               <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 px-8">
-                <Plus className="w-4 h-4 mr-2" /> Start Building Your Portfolio
+                <Plus className="w-4 h-4 mr-2" /> {user ? "Manage Portfolio" : "Start Building Your Portfolio"}
               </Button>
             </Link>
           </div>
@@ -201,17 +273,20 @@ export default function Home() {
       {/* Market Overview */}
       <div id="market-section" className="w-full max-w-[1600px] mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-display font-bold">
-            {query ? `Results for "${query}"` : "Market Overview"}
-          </h2>
-          <span className="text-sm text-muted-foreground">{results.length} assets</span>
+          <h2 className="text-2xl font-display font-bold">Market Overview</h2>
+          <span className="text-sm text-muted-foreground">{popularInstruments.length} assets</span>
         </div>
 
-        {results.length > 0 ? (
+        {isLoadingPopular ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+            <p className="text-muted-foreground">Loading popular instruments...</p>
+          </div>
+        ) : popularInstruments.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {results.map((ticker, i) => (
+            {popularInstruments.map((ticker, i) => (
               <motion.div
-                key={ticker.symbol}
+                key={'id' in (ticker as any) ? (ticker as any).id : ('symbol' in (ticker as any) ? (ticker as any).symbol : (ticker as any).price.symbol)}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -223,14 +298,11 @@ export default function Home() {
           </div>
         ) : (
           <div className="text-center py-24 bg-card/50 rounded-3xl border border-border/50 border-dashed">
-            <Search className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">No tickers found</h3>
+            <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">No data available</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Try searching for AAPL, MSFT, or BTC.
+              Check back later for market updates.
             </p>
-            <button onClick={() => setQuery("")} className="mt-5 text-primary hover:underline font-medium text-sm">
-              Clear search
-            </button>
           </div>
         )}
       </div>
@@ -238,7 +310,7 @@ export default function Home() {
   );
 }
 
-function PortfolioDemoWidget() {
+function PortfolioDemoWidget({ user, lastPortfolioId }: { user: any, lastPortfolioId: string | null }) {
   const fmt = (v: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 
   return (
@@ -318,7 +390,7 @@ function PortfolioDemoWidget() {
         </div>
 
         {/* CTA strip */}
-        <Link href="/portfolio">
+        <Link href={user && lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio"}>
           <div className="border-t border-border/40 px-5 py-3 flex items-center justify-between hover:bg-accent/20 transition-colors cursor-pointer group">
             <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Open your portfolio</span>
             <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform" />

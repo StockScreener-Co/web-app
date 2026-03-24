@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "TickerTrack"
+title = "Stock Screener"
 version = "1.0.0"
 id = "artifacts/tickertrack"
 router = "path"
