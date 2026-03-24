@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - master
+      - dev
 
 permissions:
   contents: read
@@ -44,8 +44,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Путь должен быть dist/public, как в твоем vite.config.ts
-          path: 'dist/public'
+          path: 'dist' # Теперь ищем просто в dist
 
   deploy:
     needs: build
