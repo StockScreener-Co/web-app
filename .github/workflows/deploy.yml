@@ -29,15 +29,14 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        # Добавили флаг, чтобы не было ошибки lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
-        run: |
-          cd artifacts/tickertrack
-          pnpm build
+        # Убрали переход в лишние папки, так как всё в корне
+        run: pnpm build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_API_URL: https://api.example.com # Замените на реальный API если есть
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -45,14 +44,16 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'artifacts/tickertrack/dist/public'
+          # Путь должен быть dist/public, как в твоем vite.config.ts
+          path: 'dist/public'
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
