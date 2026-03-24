@@ -29,31 +29,28 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        # Добавили флаг, чтобы не было ошибки lockfile
         run: pnpm install --no-frozen-lockfile
-      - name: Build web app
+
+      - name: Build TickerTrack
+        # Мы заходим именно в папку фронтенда и запускаем сборку там
         run: |
+          cd artifacts/tickertrack
           pnpm build
-          echo "Проверка содержимого папки после сборки:"
-          ls -R dist || echo "ПАПКА DIST НЕ СОЗДАНА!"
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'dist' # Теперь ищем просто в dist
+          # ВАЖНО: указываем путь до папки dist внутри твоего фронтенда
+          path: 'artifacts/tickertrack/dist'
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-    outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
