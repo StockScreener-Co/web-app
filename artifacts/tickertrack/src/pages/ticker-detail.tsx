@@ -8,6 +8,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { customFetch } from "@/lib/api-client";
 
 export interface TickerData {
   symbol: string;
@@ -110,8 +111,7 @@ export default function TickerDetail() {
       setIsLoading(true);
       setIsPriceLoading(true);
       
-      fetch(`/api/v1/instruments/${idOrSymbol}`)
-        .then(res => res.ok ? res.json() : null)
+      customFetch<TickerPageView>(`/api/v1/instruments/${idOrSymbol}`)
         .then(data => {
           setTickerApiData(data);
           setIsLoading(false);
@@ -121,8 +121,7 @@ export default function TickerDetail() {
           setIsLoading(false);
         });
 
-      fetch(`/api/v1/prices/now/instrument/${idOrSymbol}`)
-        .then(res => res.ok ? res.json() : null)
+      customFetch<CurrentPriceResponseDto>(`/api/v1/prices/now/instrument/${idOrSymbol}`)
         .then(data => {
           setPriceData(data);
           setIsPriceLoading(false);
@@ -141,8 +140,7 @@ export default function TickerDetail() {
     const isUuid = idOrSymbol?.includes("-");
     if (isUuid) {
       setIsChartLoading(true);
-      fetch(`/api/v1/prices/price-chart/instrument/${idOrSymbol}?period=${selectedPeriod}`)
-        .then(res => res.ok ? res.json() : null)
+      customFetch<PriceHistoryChartResponse>(`/api/v1/prices/price-chart/instrument/${idOrSymbol}?period=${selectedPeriod}`)
         .then(data => {
           setChartHistory(data);
           setIsChartLoading(false);

@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
+import { customFetch } from "@/lib/api-client";
 
 const PORTFOLIO_DEMO = [
   { symbol: "AAPL", name: "Apple Inc.", shares: 10, avgPrice: 150, currentPrice: 175.43, color: "#22c55e" },
@@ -63,11 +64,8 @@ export default function Home() {
     async function fetchPopular() {
       setIsLoadingPopular(true);
       try {
-        const res = await fetch("/api/v1/stock-popularity/most-popular");
-        if (res.ok) {
-          const data = await res.json();
-          setPopularInstruments(data);
-        }
+        const data = await customFetch<InstrumentMostPopularDto[]>("/api/v1/stock-popularity/most-popular");
+        setPopularInstruments(data);
       } catch (err) {
         console.error("Failed to fetch popular instruments:", err);
       } finally {
@@ -88,11 +86,8 @@ export default function Home() {
     setIsLoadingSearch(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
-        }
+        const data = await customFetch<any[]>(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
+        setSearchResults(data);
       } catch (err) {
         console.error("Search failed:", err);
       } finally {

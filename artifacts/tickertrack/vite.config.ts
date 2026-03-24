@@ -26,6 +26,8 @@ if (!basePath) {
   );
 }
 
+const apiTarget = process.env.VITE_API_URL || "http://localhost:8080";
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -64,7 +66,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: apiTarget,
         changeOrigin: true,
       },
     },

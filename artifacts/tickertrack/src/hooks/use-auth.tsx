@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { setAuthTokenGetter, setOnUnauthorized, customFetch } from "@/lib/api-client";
+import { setAuthTokenGetter, setOnUnauthorized, customFetch, setBaseUrl } from "@/lib/api-client";
 
 interface User {
   id: string;
@@ -33,8 +33,12 @@ const TOKEN_KEY = "tt_token";
 const REFRESH_TOKEN_KEY = "tt_refresh_token";
 const USER_KEY = "tt_user";
 
-// Configure API client to use token from localStorage
+// Configure API client
 setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
+
+if (import.meta.env.PROD) {
+  setBaseUrl(import.meta.env.VITE_API_URL || "https://core-production-bdad.up.railway.app");
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -78,15 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isRefreshing.current = true;
     refreshPromise.current = (async () => {
       try {
-        const res = await fetch("/api/v1/auth/refresh", {
+        const res = await customFetch<UserDto>("/api/v1/auth/refresh", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, refreshToken: refreshTokenValue }), 
         });
 
-        if (res.ok) {
-          const tokens: UserDto = await res.json();
-          saveAuth(tokens);
+        if (res) {
+          saveAuth(res);
           return true;
         } else {
           clearAuth();
@@ -167,9 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem(TOKEN_KEY);
       const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
 
-      await fetch("/api/v1/auth/logout", {
+      await customFetch("/api/v1/auth/logout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, refreshToken: refreshTokenValue }),
       });
     } catch (err) {
