@@ -1,5 +1,4 @@
 import { useParams, Link } from "wouter";
-import { MOCK_TICKERS, generateChartData } from "@/lib/mock-data";
 import { useState, useMemo, useEffect } from "react";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +8,19 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+export interface TickerData {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  marketCap: string;
+  peRatio: number;
+  week52High: number;
+  week52Low: number;
+  about: string;
+}
 
 interface MetricCard {
   value: number;
@@ -146,14 +158,12 @@ export default function TickerDetail() {
 
   const ticker = useMemo(() => {
     if (tickerApiData) {
-      const mockMatch = MOCK_TICKERS.find(t => t.name === tickerApiData.profile.name);
-      
       return {
-        symbol: priceData?.symbol || mockMatch?.symbol || tickerApiData.profile.name.split(' ')[0].toUpperCase(),
+        symbol: priceData?.symbol || tickerApiData.profile.name.split(' ')[0].toUpperCase(),
         name: tickerApiData.profile.name,
-        price: priceData?.price || mockMatch?.price || 0,
-        change: priceData?.todayChange?.value || mockMatch?.change || 0,
-        changePercent: priceData?.todayChange?.ratio || mockMatch?.changePercent || 0,
+        price: priceData?.price || 0,
+        change: priceData?.todayChange?.value || 0,
+        changePercent: priceData?.todayChange?.ratio || 0,
         currency: priceData?.currency || "USD",
         about: tickerApiData.profile.details.description,
         marketCap: tickerApiData.keyStats.marketCap.toLocaleString(),
@@ -162,8 +172,8 @@ export default function TickerDetail() {
         week52Low: tickerApiData.keyStats.Low52W,
       };
     }
-    return MOCK_TICKERS.find(t => t.symbol === idOrSymbol);
-  }, [idOrSymbol, tickerApiData, priceData]);
+    return null;
+  }, [tickerApiData, priceData]);
   
   const chartData = useMemo(() => {
     if (chartHistory && chartHistory.points) {
@@ -178,9 +188,8 @@ export default function TickerDetail() {
         fullTimestamp: point.timestamp
       }));
     }
-    if (!ticker || ticker.price === 0) return [];
-    return generateChartData(ticker.price, 0.03, 30);
-  }, [ticker, chartHistory, selectedPeriod]);
+    return [];
+  }, [chartHistory, selectedPeriod]);
 
   if (isLoading) {
     return (

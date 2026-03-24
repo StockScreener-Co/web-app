@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
+import { setAuthTokenGetter, setOnUnauthorized, customFetch } from "@/lib/api-client";
 
 interface User {
   id: string;
@@ -31,12 +33,18 @@ const TOKEN_KEY = "tt_token";
 const REFRESH_TOKEN_KEY = "tt_refresh_token";
 const USER_KEY = "tt_user";
 
+// Configure API client to use token from localStorage
+setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem(USER_KEY);
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const isRefreshing = useRef(false);
+  const refreshPromise = useRef<Promise<boolean> | null>(null);
+  const [, setLocation] = useLocation();
 
   // Helper to save tokens and user
   const saveAuth = (tokens: UserDto, userData?: User) => {
@@ -55,35 +63,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const refreshToken = async () => {
+  const refreshToken = async (): Promise<boolean> => {
+    if (isRefreshing.current) {
+      return refreshPromise.current || false;
+    }
+
     const token = localStorage.getItem(TOKEN_KEY);
     const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
 
-    if (!token || !refreshTokenValue) return;
-
-    try {
-      const res = await fetch("/api/v1/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, refreshToken: refreshTokenValue }),
-      });
-
-      if (res.ok) {
-        const tokens: UserDto = await res.json();
-        saveAuth(tokens);
-      } else {
-        clearAuth();
-      }
-    } catch (err) {
-      console.error("Token refresh failed:", err);
-      clearAuth();
+    if (!token || !refreshTokenValue) {
+      return false;
     }
+
+    isRefreshing.current = true;
+    refreshPromise.current = (async () => {
+      try {
+        const res = await fetch("/api/v1/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, refreshToken: refreshTokenValue }), 
+        });
+
+        if (res.ok) {
+          const tokens: UserDto = await res.json();
+          saveAuth(tokens);
+          return true;
+        } else {
+          clearAuth();
+          return false;
+        }
+      } catch (err) {
+        console.error("Token refresh failed:", err);
+        clearAuth();
+        return false;
+      } finally {
+        isRefreshing.current = false;
+        refreshPromise.current = null;
+      }
+    })();
+
+    return refreshPromise.current;
   };
+
+  // Register unauthorized handler
+  useEffect(() => {
+    setOnUnauthorized(refreshToken);
+    return () => setOnUnauthorized(null);
+  }, []);
 
   // Initial check and periodic refresh setup
   useEffect(() => {
     const interval = setInterval(() => {
-      if (localStorage.getItem(REFRESH_TOKEN_KEY)) {
+      if (localStorage.getItem(TOKEN_KEY)) {
         refreshToken();
       }
     }, 10 * 60 * 1000); // every 10 mins
@@ -94,19 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const tokens = await customFetch<UserDto>("/api/v1/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || "Login failed");
-      }
-
-      const tokens: UserDto = await res.json();
-      
       // Since login only returns tokens, we might need another API to get user info 
       // or we can deduce user info from the JWT if needed. 
       // For now, let's create a minimal user object based on the email we have.
@@ -125,16 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, repeatPassword: string, fullName: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/registration", {
+      await customFetch("/api/v1/auth/registration", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, repeatPassword, fullName }),
       });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || "Registration failed");
-      }
 
       // Registration returns UserRegistrationRespondDto
       // The user still needs to login after registration based on the description "after which the user can log in and continue working"
@@ -146,21 +163,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
 
-    if (token && refreshTokenValue) {
-      try {
-        await fetch("/api/v1/auth/logout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, refreshToken: refreshTokenValue }),
-        });
-      } catch (err) {
-        console.error("Logout API call failed:", err);
-      }
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, refreshToken: refreshTokenValue }),
+      });
+    } catch (err) {
+      console.error("Logout API call failed:", err);
     }
     clearAuth();
+    setLocation("/");
   };
 
   return (

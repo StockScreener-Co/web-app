@@ -5,10 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MetricCardTrend } from "./metricCardTrend";
 
 export interface MetricCard {
-  label?: string;
-  value: string;
-  change?: string;
-  isPositive?: boolean;
+  value: number;
+  ratio: number;
+  trend: MetricCardTrend;
 }

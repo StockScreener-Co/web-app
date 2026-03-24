@@ -1,6 +1,18 @@
-import { TickerData } from "@/lib/mock-data";
 import { Link } from "wouter";
 import { TrendingUp, TrendingDown } from "lucide-react";
+
+export interface TickerData {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  marketCap: string;
+  peRatio: number;
+  week52High: number;
+  week52Low: number;
+  about: string;
+}
 
 export interface InstrumentMostPopularDto {
   name: string;
@@ -39,7 +51,9 @@ export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopu
     ? `${ticker.price.todayChange.value} (${ticker.price.todayChange.change ?? ''})`
     : `${isPositive ? '+' : ''}${ticker.change.toFixed(2)} (${isPositive ? '+' : ''}${ticker.changePercent.toFixed(2)}%)`);
 
-  const href = isSearchDto ? `/ticker/${ticker.id}` : `/ticker/${symbol}`;
+  // Use id for navigation if available (e.g. from search), otherwise fall back to symbol
+  const idOrSymbol = isSearchDto ? (ticker as any).id : symbol;
+  const href = `/ticker/${idOrSymbol}`;
 
   return (
     <Link href={href} className="block group">

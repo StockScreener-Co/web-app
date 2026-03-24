@@ -6,7 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./assetDto";
 export * from "./currentPriceResponseDto";
 export * from "./healthStatus";
+export * from "./instrumentDto";
 export * from "./instrumentMostPopularDto";
 export * from "./metricCard";
+export * from "./metricCardOld";
+export * from "./metricCardTrend";
+export * from "./operationType";
+export * from "./portfolioDetailsDto";
+export * from "./portfolioDto";
+export * from "./portfolioRequestDto";
+export * from "./searchInstrumentsParams";
+export * from "./transactionRequestDto";
+export * from "./transactionResponseDto";

@@ -7,6 +7,7 @@ export type ErrorType<T = unknown> = ApiError<T>;
 export type BodyType<T> = T;
 
 export type AuthTokenGetter = () => Promise<string | null> | string | null;
+export type OnUnauthorized = () => Promise<boolean>;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
@@ -17,6 +18,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _onUnauthorized: OnUnauthorized | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -39,6 +41,16 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Register a callback to be invoked when a fetch returns a 401 Unauthorized
+ * response.  The callback should attempt to refresh the auth token and return
+ * true if it succeeds, or false if it fails.  If the callback returns true,
+ * the original fetch is retried once.
+ */
+export function setOnUnauthorized(onUnauthorized: OnUnauthorized | null): void {
+  _onUnauthorized = onUnauthorized;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -323,41 +335,58 @@ export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
 ): Promise<T> {
-  input = applyBaseUrl(input);
+  const finalInput = applyBaseUrl(input);
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
-  const method = resolveMethod(input, init.method);
+  const method = resolveMethod(finalInput, init.method);
 
   if (init.body != null && (method === "GET" || method === "HEAD")) {
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
   }
 
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const prepareHeaders = async (explicitHeaders?: HeadersInit) => {
+    const headers = mergeHeaders(
+      isRequest(finalInput) ? finalInput.headers : undefined,
+      headersInit,
+      explicitHeaders,
+    );
 
-  if (
-    typeof init.body === "string" &&
-    !headers.has("content-type") &&
-    looksLikeJson(init.body)
-  ) {
-    headers.set("content-type", "application/json");
-  }
+    if (
+      typeof init.body === "string" &&
+      !headers.has("content-type") &&
+      looksLikeJson(init.body)
+    ) {
+      headers.set("content-type", "application/json");
+    }
 
-  if (responseType === "json" && !headers.has("accept")) {
-    headers.set("accept", DEFAULT_JSON_ACCEPT);
-  }
+    if (responseType === "json" && !headers.has("accept")) {
+      headers.set("accept", DEFAULT_JSON_ACCEPT);
+    }
 
-  // Attach bearer token when an auth getter is configured and no
-  // Authorization header has been explicitly provided.
-  if (_authTokenGetter && !headers.has("authorization")) {
-    const token = await _authTokenGetter();
-    if (token) {
-      headers.set("authorization", `Bearer ${token}`);
+    // Attach bearer token when an auth getter is configured and no
+    // Authorization header has been explicitly provided.
+    if (_authTokenGetter && !headers.has("authorization")) {
+      const token = await _authTokenGetter();
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+    }
+    return headers;
+  };
+
+  const headers = await prepareHeaders();
+  const requestInfo = { method, url: resolveUrl(finalInput) };
+
+  let response = await fetch(finalInput, { ...init, method, headers });
+
+  if (response.status === 401 && _onUnauthorized) {
+    const success = await _onUnauthorized();
+    if (success) {
+      // Retry once with fresh headers (potentially new token)
+      const freshHeaders = await prepareHeaders();
+      response = await fetch(finalInput, { ...init, method, headers: freshHeaders });
     }
   }
-
-  const requestInfo = { method, url: resolveUrl(input) };
-
-  const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

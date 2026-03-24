@@ -5,11 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { MetricCard } from "./metricCard";
+import type { MetricCardOld } from "./metricCardOld";
 
 export interface CurrentPriceResponseDto {
   symbol: string;
   price: number;
   currency: string;
-  todayChange: MetricCard;
+  todayChange: MetricCardOld;
 }

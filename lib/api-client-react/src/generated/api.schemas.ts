@@ -5,11 +5,91 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type OperationType = (typeof OperationType)[keyof typeof OperationType];
+
+export const OperationType = {
+  BUY: "BUY",
+  SELL: "SELL",
+  DIVIDEND: "DIVIDEND",
+  DEPOSIT: "DEPOSIT",
+  WITHDRAWAL: "WITHDRAWAL",
+} as const;
+
+export interface TransactionRequestDto {
+  instrumentId: string;
+  tradeDate: string;
+  price: number;
+  operationType: OperationType;
+  quantity: number;
+}
+
+export interface TransactionResponseDto {
+  id: string;
+  quantity: number;
+  price: number;
+  tradeDate: string;
+  operationType: OperationType;
+  symbol: string;
+}
+
+export interface InstrumentDto {
+  id: string;
+  symbol: string;
+  name: string;
+  type?: string;
+  currency?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
 
+export interface PortfolioDto {
+  id: string;
+  name: string;
+}
+
+export type MetricCardTrend =
+  (typeof MetricCardTrend)[keyof typeof MetricCardTrend];
+
+export const MetricCardTrend = {
+  UP: "UP",
+  DOWN: "DOWN",
+  FLAT: "FLAT",
+} as const;
+
 export interface MetricCard {
+  value: number;
+  ratio: number;
+  trend: MetricCardTrend;
+}
+
+export interface AssetDto {
+  id: string;
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  qty: number;
+  avgPrice: number;
+  weight: number;
+  value: number;
+  currentPrice: number;
+  unrealizedPL: MetricCard;
+  todayChange: MetricCard;
+}
+
+export interface PortfolioDetailsDto {
+  id: string;
+  name: string;
+  assets: AssetDto[];
+}
+
+export interface PortfolioRequestDto {
+  /** @maxLength 100 */
+  name: string;
+}
+
+export interface MetricCardOld {
   label?: string;
   value: string;
   change?: string;
@@ -20,7 +100,7 @@ export interface CurrentPriceResponseDto {
   symbol: string;
   price: number;
   currency: string;
-  todayChange: MetricCard;
+  todayChange: MetricCardOld;
 }
 
 export interface InstrumentMostPopularDto {
@@ -28,3 +108,8 @@ export interface InstrumentMostPopularDto {
   price: CurrentPriceResponseDto;
   isDataComplete: boolean;
 }
+
+export type SearchInstrumentsParams = {
+  query: string;
+  limit?: number;
+};

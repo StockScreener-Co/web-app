@@ -24,6 +24,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/portfolios:
+    get:
+      operationId: getPortfolios
+      tags: [portfolios]
+      summary: Get portfolios
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortfolioDto"
+    post:
+      operationId: createPortfolio
+      tags: [portfolios]
+      summary: Create portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioRequestDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioDto"
+  /v1/portfolios/my:
+    get:
+      operationId: getMyPortfolios
+      tags: [portfolios]
+      summary: Get my portfolios
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortfolioDto"
+  /v1/portfolios/{id}:
+    get:
+      operationId: getPortfolioById
+      tags: [portfolios]
+      summary: Get portfolio by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioDetailsDto"
+    delete:
+      operationId: deletePortfolio
+      tags: [portfolios]
+      summary: Delete portfolio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No content
   /v1/stock-popularity/most-popular:
     get:
       operationId: getMostPopularStocks
@@ -39,8 +117,124 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/InstrumentMostPopularDto"
+  /v1/transactions/portfolio/{portfolioId}:
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Create transaction for portfolio
+      parameters:
+        - name: portfolioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionRequestDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDto"
+  /v1/instruments/search:
+    get:
+      operationId: searchInstruments
+      tags: [instruments]
+      summary: Search instruments
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InstrumentDto"
 components:
   schemas:
+    OperationType:
+      type: string
+      enum: [BUY, SELL, DIVIDEND, DEPOSIT, WITHDRAWAL]
+    TransactionRequestDto:
+      type: object
+      properties:
+        instrumentId:
+          type: string
+          format: uuid
+        tradeDate:
+          type: string
+          format: date
+        price:
+          type: number
+        operationType:
+          $ref: "#/components/schemas/OperationType"
+        quantity:
+          type: number
+      required:
+        - instrumentId
+        - tradeDate
+        - price
+        - operationType
+        - quantity
+    TransactionResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quantity:
+          type: number
+        price:
+          type: number
+        tradeDate:
+          type: string
+          format: date
+        operationType:
+          $ref: "#/components/schemas/OperationType"
+        symbol:
+          type: string
+      required:
+        - id
+        - quantity
+        - price
+        - tradeDate
+        - operationType
+        - symbol
+    InstrumentDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        currency:
+          type: string
+      required:
+        - id
+        - symbol
+        - name
     HealthStatus:
       type: object
       properties:
@@ -48,6 +242,80 @@ components:
           type: string
       required:
         - status
+    PortfolioDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+    PortfolioDetailsDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetDto"
+      required:
+        - id
+        - name
+        - assets
+    AssetDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        instrumentId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        name:
+          type: string
+        qty:
+          type: number
+        avgPrice:
+          type: number
+        weight:
+          type: number
+        value:
+          type: number
+        currentPrice:
+          type: number
+        unrealizedPL:
+          $ref: "#/components/schemas/MetricCard"
+        todayChange:
+          $ref: "#/components/schemas/MetricCard"
+      required:
+        - id
+        - instrumentId
+        - symbol
+        - name
+        - qty
+        - avgPrice
+        - weight
+        - value
+        - currentPrice
+        - unrealizedPL
+        - todayChange
+    PortfolioRequestDto:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+      required:
+        - name
     InstrumentMostPopularDto:
       type: object
       properties:
@@ -71,13 +339,27 @@ components:
         currency:
           type: string
         todayChange:
-          $ref: "#/components/schemas/MetricCard"
+          $ref: "#/components/schemas/MetricCardOld"
       required:
         - symbol
         - price
         - currency
         - todayChange
     MetricCard:
+      type: object
+      properties:
+        value:
+          type: number
+        ratio:
+          type: number
+        trend:
+          type: string
+          enum: [UP, DOWN, FLAT]
+      required:
+        - value
+        - ratio
+        - trend
+    MetricCardOld:
       type: object
       properties:
         label:

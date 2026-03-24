@@ -2,12 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchTickers } from "@/lib/mock-data";
 import { TickerCard, InstrumentMostPopularDto } from "@/components/ticker-card";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/use-auth";
+import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 
 const PORTFOLIO_DEMO = [
   { symbol: "AAPL", name: "Apple Inc.", shares: 10, avgPrice: 150, currentPrice: 175.43, color: "#22c55e" },
@@ -52,6 +52,7 @@ const FEATURES = [
 
 export default function Home() {
   const { user } = useAuth();
+  const { lastPortfolioId } = useLastPortfolio();
   const [query, setQuery] = useState("");
   const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -192,7 +193,7 @@ export default function Home() {
               </div>
 
               <div className="flex gap-3">
-                <Link href={user ? "/portfolio" : "/auth"}>
+                <Link href={user ? (lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio") : "/auth"}>
                   <Button size="lg" className="rounded-xl shadow-lg shadow-primary/25 px-6">
                     <BarChart2 className="w-4 h-4 mr-2" />
                     {user ? "Go to Portfolio" : "Get Started"}
@@ -219,7 +220,7 @@ export default function Home() {
               transition={{ duration: 0.55, delay: 0.1 }}
               className="hidden lg:block"
             >
-              <PortfolioDemoWidget />
+              <PortfolioDemoWidget user={user} lastPortfolioId={lastPortfolioId} />
             </motion.div>
           </div>
         </div>
@@ -260,7 +261,7 @@ export default function Home() {
           </div>
 
           <div className="mt-10 text-center">
-            <Link href={user ? "/portfolio" : "/auth"}>
+            <Link href={user ? (lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio") : "/auth"}>
               <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 px-8">
                 <Plus className="w-4 h-4 mr-2" /> {user ? "Manage Portfolio" : "Start Building Your Portfolio"}
               </Button>
@@ -285,7 +286,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {popularInstruments.map((ticker, i) => (
               <motion.div
-                key={'id' in ticker ? ticker.id : ('symbol' in ticker ? ticker.symbol : ticker.price.symbol)}
+                key={'id' in (ticker as any) ? (ticker as any).id : ('symbol' in (ticker as any) ? (ticker as any).symbol : (ticker as any).price.symbol)}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -309,7 +310,7 @@ export default function Home() {
   );
 }
 
-function PortfolioDemoWidget() {
+function PortfolioDemoWidget({ user, lastPortfolioId }: { user: any, lastPortfolioId: string | null }) {
   const fmt = (v: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 
   return (
@@ -389,7 +390,7 @@ function PortfolioDemoWidget() {
         </div>
 
         {/* CTA strip */}
-        <Link href="/portfolio">
+        <Link href={user && lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolio"}>
           <div className="border-t border-border/40 px-5 py-3 flex items-center justify-between hover:bg-accent/20 transition-colors cursor-pointer group">
             <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Open your portfolio</span>
             <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform" />

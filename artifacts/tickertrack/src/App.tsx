@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
 
 import Home from "@/pages/home";
+import PortfoliosList from "@/pages/portfolios-list";
 import Portfolio from "@/pages/portfolio";
 import TickerDetail from "@/pages/ticker-detail";
 import AuthPage from "@/pages/auth";
@@ -19,6 +20,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/portfolios" component={PortfoliosList} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/ticker/:idOrSymbol" component={TickerDetail} />
@@ -30,7 +32,7 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="tickertrack-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="ss-theme">
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
