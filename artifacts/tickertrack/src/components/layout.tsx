@@ -111,8 +111,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="bg-primary/10 p-1.5 rounded-xl">
                 <svg width="28" height="28" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect width="256" height="256" rx="60" fill="#16a34a"/>
-                  <path d="M165 95C165 85 155 80 140 80H110C95 80 85 88 85 100C85 125 171 120 171 155C171 172 155 180 140 180H110C90 180 80 170 80 155" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M140 170L170 140L200 160L240 100" stroke="#4ade80" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M165 95C165 85 155 80 140 80H110C95 80 85 88 85 100C85 125 171 120 171 155C171 172 155 180 140 180H110C90 180 80 170 80 155" stroke="white" strokeWidth="20" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M140 170L170 140L200 160L240 100" stroke="#4ade80" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round"/>
                   <circle cx="240" cy="100" r="8" fill="#4ade80"/>
                 </svg>
               </div>

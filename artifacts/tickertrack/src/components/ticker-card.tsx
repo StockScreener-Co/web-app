@@ -41,15 +41,15 @@ export function TickerCard({ ticker }: { ticker: TickerData | InstrumentMostPopu
   const isDto = 'isDataComplete' in ticker;
   const isSearchDto = 'id' in ticker && !isDto;
   
-  const symbol = isSearchDto ? ticker.symbol : (isDto ? ticker.price.symbol : ticker.symbol);
+  const symbol = isSearchDto ? ticker.symbol : (isDto ? (ticker.price?.symbol ?? ticker.name) : ticker.symbol);
   const name = ticker.name;
-  const price = isSearchDto ? 0 : (isDto ? ticker.price.price : ticker.price);
+  const price = isSearchDto ? 0 : (isDto ? (ticker.price?.price ?? 0) : (ticker as any).price ?? 0);
   const isPositive = isSearchDto ? true : (isDto 
-    ? (ticker.price.todayChange.isPositive ?? true)
-    : ticker.change >= 0);
-  const changeLabel = isSearchDto ? ticker.currency : (isDto 
-    ? `${ticker.price.todayChange.value} (${ticker.price.todayChange.change ?? ''})`
-    : `${isPositive ? '+' : ''}${ticker.change.toFixed(2)} (${isPositive ? '+' : ''}${ticker.changePercent.toFixed(2)}%)`);
+    ? (ticker.price?.todayChange?.isPositive ?? true)
+    : (ticker as any).change >= 0);
+  const changeLabel = isSearchDto ? (ticker as any).currency : (isDto 
+    ? (ticker.price?.todayChange ? `${ticker.price.todayChange.value} (${ticker.price.todayChange.change ?? ''})` : '-')
+    : `${isPositive ? '+' : ''}${(ticker as any).change?.toFixed(2) ?? '0.00'} (${isPositive ? '+' : ''}${(ticker as any).changePercent?.toFixed(2) ?? '0.00'}%)`);
 
   // Use id for navigation if available (e.g. from search), otherwise fall back to symbol
   const idOrSymbol = isSearchDto ? (ticker as any).id : symbol;

@@ -8,7 +8,7 @@ const basePath = process.env.BASE_PATH || "./";
 const apiTarget = process.env.VITE_API_URL || "http://localhost:8080";
 
 export default defineConfig({
-  base: basePath,
+  base: basePath === "./" ? "" : basePath,
   plugins: [
     react(),
     tailwindcss(),
@@ -22,6 +22,14 @@ export default defineConfig({
   },
   // Указываем корень явно
   root: process.cwd(),
+  server: {
+    proxy: {
+      "/api": {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     // Собираем в папку dist в корне проекта
     outDir: "dist",

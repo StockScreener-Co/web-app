@@ -30,15 +30,24 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const rawBase = import.meta.env.BASE_URL || "";
+  const base = (rawBase === "./" || rawBase === "/") ? "" : rawBase.replace(/\/$/, "");
+  
+  return (
+    <WouterRouter base={base}>
+      <Router />
+    </WouterRouter>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="ss-theme">
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
+            <AppContent />
             <Toaster />
           </TooltipProvider>
         </QueryClientProvider>

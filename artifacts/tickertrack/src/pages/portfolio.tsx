@@ -33,12 +33,10 @@ export default function Portfolio() {
   const currentPortfolioId = useMemo(() => new URLSearchParams(search).get('id'), [search]);
 
   useEffect(() => {
-    if (user) {
-      if (currentPortfolioId) {
-        updateLastPortfolioId(currentPortfolioId);
-      } else if (lastPortfolioId) {
-        setLocation(`/portfolio?id=${lastPortfolioId}`);
-      }
+    if (user && !currentPortfolioId && lastPortfolioId) {
+      setLocation(`/portfolio?id=${lastPortfolioId}`);
+    } else if (user && currentPortfolioId) {
+      updateLastPortfolioId(currentPortfolioId);
     }
   }, [user, currentPortfolioId, lastPortfolioId, updateLastPortfolioId, setLocation]);
 
@@ -357,8 +355,8 @@ export default function Portfolio() {
                   <tbody className="divide-y divide-border/30">
                     <AnimatePresence>
                       {assets.map((asset, i) => {
-                        const isPosToday = asset.todayChange.trend === 'UP';
-                        const isPosTotal = asset.unrealizedPL.trend === 'UP';
+                        const isPosToday = asset.todayChange?.trend === 'UP';
+                        const isPosTotal = asset.unrealizedPL?.trend === 'UP';
                         return (
                           <motion.tr
                             key={asset.id}
@@ -381,8 +379,8 @@ export default function Portfolio() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="font-semibold">{fmt(asset.currentPrice)}</div>
-                              <div className={`text-xs ${isPosToday ? "text-green-400" : asset.todayChange.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
-                                {asset.todayChange.ratio.toFixed(2)}% 1D
+                              <div className={`text-xs ${isPosToday ? "text-green-400" : asset.todayChange?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                                {asset.todayChange?.ratio?.toFixed(2) ?? "0.00"}% 1D
                               </div>
                             </td>
                             <td className="p-4 text-right">
@@ -394,11 +392,11 @@ export default function Portfolio() {
                               <div className="text-xs text-muted-foreground">{(asset.weight * 100).toFixed(1)}% of portfolio</div>
                             </td>
                             <td className="p-4 text-right">
-                              <div className={`font-semibold ${isPosTotal ? "text-green-400" : asset.unrealizedPL.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmt(asset.unrealizedPL.value)}
+                              <div className={`font-semibold ${isPosTotal ? "text-green-400" : asset.unrealizedPL?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                                {fmt(asset.unrealizedPL?.value ?? 0)}
                               </div>
-                              <div className={`text-xs ${isPosTotal ? "text-green-400" : asset.unrealizedPL.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmtPct(asset.unrealizedPL.ratio)}
+                              <div className={`text-xs ${isPosTotal ? "text-green-400" : asset.unrealizedPL?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                                {fmtPct(asset.unrealizedPL?.ratio ?? 0)}
                               </div>
                             </td>
                             {/* <td className="p-4 pr-6 text-center">

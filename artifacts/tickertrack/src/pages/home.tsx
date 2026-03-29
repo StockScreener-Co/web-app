@@ -65,7 +65,12 @@ export default function Home() {
       setIsLoadingPopular(true);
       try {
         const data = await customFetch<InstrumentMostPopularDto[]>("/api/v1/stock-popularity/most-popular");
-        setPopularInstruments(data);
+        if (Array.isArray(data)) {
+          setPopularInstruments(data);
+        } else {
+          console.error("Expected array from most-popular, got:", data);
+          setPopularInstruments([]);
+        }
       } catch (err) {
         console.error("Failed to fetch popular instruments:", err);
       } finally {
@@ -87,7 +92,12 @@ export default function Home() {
     const timeoutId = setTimeout(async () => {
       try {
         const data = await customFetch<any[]>(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
-        setSearchResults(data);
+        if (Array.isArray(data)) {
+          setSearchResults(data);
+        } else {
+          console.error("Expected array from search, got:", data);
+          setSearchResults([]);
+        }
       } catch (err) {
         console.error("Search failed:", err);
       } finally {
@@ -281,7 +291,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {popularInstruments.map((ticker, i) => (
               <motion.div
-                key={'id' in (ticker as any) ? (ticker as any).id : ('symbol' in (ticker as any) ? (ticker as any).symbol : (ticker as any).price.symbol)}
+                key={'id' in (ticker as any) ? (ticker as any).id : ('symbol' in (ticker as any) ? (ticker as any).symbol : (ticker as any).price?.symbol ?? i)}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

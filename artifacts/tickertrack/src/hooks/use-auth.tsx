@@ -36,14 +36,16 @@ const USER_KEY = "tt_user";
 // Configure API client
 setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
 
-if (import.meta.env.PROD) {
-  setBaseUrl(import.meta.env.VITE_API_URL || "https://core-production-bdad.up.railway.app");
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem(USER_KEY);
-    return saved ? JSON.parse(saved) : null;
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error("Failed to parse saved user:", e);
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
   });
   const [isLoading, setIsLoading] = useState(false);
   const isRefreshing = useRef(false);
@@ -52,11 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Helper to save tokens and user
   const saveAuth = (tokens: UserDto, userData?: User) => {
-    localStorage.setItem(TOKEN_KEY, tokens.token);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    if (userData) {
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-      setUser(userData);
+    try {
+      localStorage.setItem(TOKEN_KEY, tokens.token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+      if (userData) {
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        setUser(userData);
+      }
+    } catch (e) {
+      console.error("Failed to save auth data:", e);
     }
   };
 
