@@ -73,21 +73,21 @@ interface CurrentPriceResponseDto {
 
 interface TickerPageView {
   instrumentId: string;
-  profile: {
-    name: string;
-    founded: string;
-    sector: string;
-    industry: string;
-    employeesNumber: string;
-    ceoFullName: string;
-    details: { description: string };
+  profile?: {
+    name?: string;
+    founded?: string;
+    sector?: string;
+    industry?: string;
+    employeesNumber?: string;
+    ceoFullName?: string;
+    details?: { description?: string };
   };
-  keyStats: {
-    marketCap: number;
-    peRatio: number;
-    epsTtm: number;
-    High52W: number;
-    Low52W: number;
+  keyStats?: {
+    marketCap?: number;
+    peRatio?: number;
+    epsTtm?: number;
+    High52W?: number;
+    Low52W?: number;
   };
 }
 
@@ -128,15 +128,17 @@ export default function TickerDetail() {
   const createTransaction = useCreateTransaction();
 
   useEffect(() => {
-    // Check if it looks like a UUID (approximate check)
+    // Determine if it's a UUID or a symbol. 
+    // In this app, instrumentId is a UUID, and idOrSymbol can be either.
     const isUuid = idOrSymbol?.includes("-");
     
-    if (isUuid) {
+    const fetchData = (id: string) => {
       setIsLoading(true);
       setIsPriceLoading(true);
       
-      customFetch<TickerPageView>(`/api/v1/instruments/${idOrSymbol}`)
+      customFetch<TickerPageView>(`/api/v1/instruments/${id}`)
         .then(data => {
+          console.log("[DEBUG] Ticker data received:", data);
           setTickerApiData(data);
           setIsLoading(false);
         })
@@ -145,8 +147,9 @@ export default function TickerDetail() {
           setIsLoading(false);
         });
 
-      customFetch<CurrentPriceResponseDto>(`/api/v1/prices/now/instrument/${idOrSymbol}`)
+      customFetch<CurrentPriceResponseDto>(`/api/v1/prices/now/instrument/${id}`)
         .then(data => {
+          console.log("[DEBUG] Price data received:", data);
           setPriceData(data);
           setIsPriceLoading(false);
         })
@@ -156,7 +159,7 @@ export default function TickerDetail() {
         });
 
       setIsNewsLoading(true);
-      customFetch<NewsDto[]>(`/api/v1/news/instrument/${idOrSymbol}`)
+      customFetch<NewsDto[]>(`/api/v1/news/instrument/${id}`)
         .then(data => {
           setNews(data);
           setIsNewsLoading(false);
@@ -165,17 +168,39 @@ export default function TickerDetail() {
           console.error("Failed to fetch news:", err);
           setIsNewsLoading(false);
         });
-    } else {
-      setTickerApiData(null);
-      setPriceData(null);
+    };
+
+    if (idOrSymbol) {
+      if (isUuid) {
+        fetchData(idOrSymbol);
+      } else {
+        // If it's a symbol, try to find the instrument ID first
+        setIsLoading(true);
+        customFetch<any[]>(`/api/v1/instruments/search?query=${idOrSymbol}&limit=1`)
+          .then(results => {
+            if (results && results.length > 0 && results[0].symbol.toUpperCase() === idOrSymbol.toUpperCase()) {
+              fetchData(results[0].id);
+            } else {
+              console.error(`Instrument with symbol ${idOrSymbol} not found`);
+              setIsLoading(false);
+            }
+          })
+          .catch(err => {
+            console.error("Failed to search instrument by symbol:", err);
+            setIsLoading(false);
+          });
+      }
     }
   }, [idOrSymbol]);
 
   useEffect(() => {
-    const isUuid = idOrSymbol?.includes("-");
-    if (isUuid) {
+    // We use tickerApiData?.instrumentId because it will be available 
+    // after we've resolved a symbol to an ID or if we started with a UUID.
+    const effectiveId = tickerApiData?.instrumentId;
+    
+    if (effectiveId) {
       setIsChartLoading(true);
-      customFetch<PriceHistoryChartResponse>(`/api/v1/prices/price-chart/instrument/${idOrSymbol}?period=${selectedPeriod}`)
+      customFetch<PriceHistoryChartResponse>(`/api/v1/prices/price-chart/instrument/${effectiveId}?period=${selectedPeriod}`)
         .then(data => {
           setChartHistory(data);
           setIsChartLoading(false);
@@ -187,26 +212,31 @@ export default function TickerDetail() {
     } else {
       setChartHistory(null);
     }
-  }, [idOrSymbol, selectedPeriod]);
+  }, [tickerApiData?.instrumentId, selectedPeriod]);
 
   const ticker = useMemo(() => {
-    if (tickerApiData && tickerApiData.profile) {
+    if (tickerApiData) {
+      // Create a ticker object even if profile is partially missing
+      const profile = tickerApiData.profile || {};
+      const keyStats = tickerApiData.keyStats || {};
+      const details = profile.details || {};
+
       return {
-        symbol: priceData?.symbol || tickerApiData.profile.name?.split(' ')[0].toUpperCase() || "UNKNOWN",
-        name: tickerApiData.profile.name || "Unknown Company",
+        symbol: priceData?.symbol || profile.name?.split(' ')[0].toUpperCase() || idOrSymbol?.toUpperCase() || "UNKNOWN",
+        name: profile.name || "Unknown Company",
         price: priceData?.price || 0,
         change: priceData?.todayChange?.value || 0,
         changePercent: priceData?.todayChange?.ratio || 0,
         currency: priceData?.currency || "USD",
-        about: tickerApiData.profile.details?.description || "",
-        marketCap: tickerApiData.keyStats?.marketCap?.toLocaleString() || "N/A",
-        peRatio: tickerApiData.keyStats?.peRatio || 0,
-        week52High: tickerApiData.keyStats?.High52W || 0,
-        week52Low: tickerApiData.keyStats?.Low52W || 0,
+        about: details.description || "",
+        marketCap: keyStats.marketCap?.toLocaleString() || "N/A",
+        peRatio: keyStats.peRatio || 0,
+        week52High: keyStats.High52W || 0,
+        week52Low: keyStats.Low52W || 0,
       };
     }
     return null;
-  }, [tickerApiData, priceData]);
+  }, [tickerApiData, priceData, idOrSymbol]);
   
   const chartData = useMemo(() => {
     if (chartHistory && chartHistory.points) {
