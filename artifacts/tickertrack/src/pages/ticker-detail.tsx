@@ -1,14 +1,17 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useState, useMemo, useEffect } from "react";
-import { usePortfolio } from "@/hooks/use-portfolio";
+import { useAuth } from "@/hooks/use-auth";
+import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Info, Activity, DollarSign, Loader2, Calendar, MapPin, Users, Briefcase, Building2, BookmarkPlus } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader2, BookmarkPlus, Calendar, Info, Building2, Briefcase, Users, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { customFetch } from "@/lib/api-client";
+import { customFetch, useCreateTransaction } from "@/lib/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import type { OperationType } from "@/lib/api-client";
 
 export interface TickerData {
   symbol: string;
@@ -90,11 +93,18 @@ interface TickerPageView {
 
 export default function TickerDetail() {
   const { idOrSymbol } = useParams();
-  const { addPosition } = usePortfolio();
+  const { user } = useAuth();
+  const { lastPortfolioId } = useLastPortfolio();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
+  const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
+  const [operationType, setOperationType] = useState<OperationType>("BUY");
+  
   const [tickerApiData, setTickerApiData] = useState<TickerPageView | null>(null);
   const [priceData, setPriceData] = useState<CurrentPriceResponseDto | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,6 +112,8 @@ export default function TickerDetail() {
   const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>(ChartPeriod.ONE_MONTH);
   const [chartHistory, setChartHistory] = useState<PriceHistoryChartResponse | null>(null);
   const [isChartLoading, setIsChartLoading] = useState(false);
+
+  const createTransaction = useCreateTransaction();
 
   useEffect(() => {
     // Check if it looks like a UUID (approximate check)
@@ -212,12 +224,33 @@ export default function TickerDetail() {
   const isPositive = ticker.change >= 0;
   const chartColor = ticker.price > 0 ? (isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))') : 'hsl(var(--primary))';
 
-  const handleAddPosition = (e: React.FormEvent) => {
+  const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to add positions to your portfolio.",
+        variant: "destructive"
+      });
+      setLocation("/auth");
+      return;
+    }
+
+    if (!lastPortfolioId) {
+      toast({
+        title: "No portfolio selected",
+        description: "Please create a portfolio first.",
+        variant: "destructive"
+      });
+      setLocation("/portfolios");
+      return;
+    }
+
     const numShares = parseFloat(shares);
     const numPrice = parseFloat(avgPrice);
 
-    if (isNaN(numShares) || numShares <= 0 || isNaN(numPrice) || numPrice <= 0) {
+    if (isNaN(numShares) || numShares <= 0 || isNaN(numPrice) || numPrice < 0) {
       toast({
         title: "Invalid input",
         description: "Please enter valid numbers for shares and price.",
@@ -226,14 +259,38 @@ export default function TickerDetail() {
       return;
     }
 
-    addPosition(ticker.symbol, numShares, numPrice);
-    setIsDialogOpen(false);
-    setShares("");
-    setAvgPrice("");
-    toast({
-      title: "Position Added",
-      description: `Successfully added ${numShares} shares of ${ticker.symbol} to your portfolio.`,
-    });
+    try {
+      await createTransaction.mutateAsync({
+        portfolioId: lastPortfolioId,
+        data: {
+          instrumentId: tickerApiData?.instrumentId || idOrSymbol!,
+          quantity: numShares,
+          price: numPrice,
+          tradeDate,
+          operationType,
+        }
+      });
+
+      // Refresh portfolio data in cache if it exists
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios", lastPortfolioId] });
+
+      setIsDialogOpen(false);
+      setShares("");
+      setAvgPrice("");
+      setTradeDate(new Date().toISOString().split('T')[0]);
+      setOperationType("BUY");
+
+      toast({
+        title: "Position Added",
+        description: `Successfully added ${numShares} shares of ${ticker.symbol} to your portfolio.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to add position. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const openDialogWithCurrentPrice = () => {
@@ -476,6 +533,17 @@ export default function TickerDetail() {
           <form onSubmit={handleAddPosition}>
             <div className="grid gap-6 py-4">
               <div className="grid gap-2">
+                <Label htmlFor="tradeDate">Trade Date</Label>
+                <Input
+                  id="tradeDate"
+                  type="date"
+                  value={tradeDate}
+                  onChange={(e) => setTradeDate(e.target.value)}
+                  className="h-10 bg-background"
+                />
+              </div>
+              
+              <div className="grid gap-2">
                 <Label htmlFor="shares">Number of Shares</Label>
                 <Input
                   id="shares"
@@ -507,7 +575,12 @@ export default function TickerDetail() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="font-semibold shadow-md shadow-primary/20">
+              <Button 
+                type="submit" 
+                className="font-semibold shadow-md shadow-primary/20"
+                disabled={createTransaction.isPending}
+              >
+                {createTransaction.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Position
               </Button>
             </DialogFooter>
