@@ -6,7 +6,7 @@
     "preinstall": "node -e \"const fs = require('fs'); ['package-lock.json', 'yarn.lock'].forEach(f => fs.existsSync(f) && fs.unlinkSync(f))\"",
     "start": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "cross-env PORT=5000 pnpm --filter @workspace/api-server dev",
-    "dev:web": "cross-env PORT=3000 BASE_PATH=/ pnpm --filter @workspace/tickertrack dev",
+    "dev:web": "cross-env PORT=3000 BASE_PATH=/ pnpm --filter @workspace/stockscreener dev",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"

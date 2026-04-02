@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 import Home from "@/pages/home";
 import PortfoliosList from "@/pages/portfolios-list";
@@ -13,7 +14,21 @@ import TickerDetail from "@/pages/ticker-detail";
 import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      throwOnError: false,
+      retry: (failureCount, error: any) => {
+        // Не ретраить 4xx ошибки
+        if (error?.status >= 400 && error?.status < 500) return false;
+        return failureCount < 2;
+      },
+    },
+    mutations: {
+      throwOnError: false,
+    },
+  },
+});
 
 function Router() {
   return (
@@ -33,10 +48,12 @@ function Router() {
 function AppContent() {
   const rawBase = import.meta.env.BASE_URL || "";
   const base = (rawBase === "./" || rawBase === "/") ? "" : rawBase.replace(/\/$/, "");
-  
+
   return (
     <WouterRouter base={base}>
-      <Router />
+      <ErrorBoundary>
+        <Router />
+      </ErrorBoundary>
     </WouterRouter>
   );
 }

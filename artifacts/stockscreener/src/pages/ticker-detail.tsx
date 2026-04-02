@@ -27,6 +27,7 @@ export interface TickerData {
 }
 
 interface MetricCard {
+  year?: number;
   value: number;
   ratio: number;
   trend: "UP" | "DOWN" | "FLAT";
@@ -73,6 +74,7 @@ interface CurrentPriceResponseDto {
 
 interface TickerPageView {
   instrumentId: string;
+  currPrice?: CurrentPriceResponseDto;
   profile?: {
     name?: string;
     founded?: string;
@@ -85,7 +87,10 @@ interface TickerPageView {
   keyStats?: {
     marketCap?: number;
     peRatio?: number;
+    peTtmRatio?: number;
     epsTtm?: number;
+    high52W?: number;
+    low52W?: number;
     High52W?: number;
     Low52W?: number;
   };
@@ -100,6 +105,12 @@ interface NewsDto {
   image: string;
 }
 
+// Safe number formatter — никогда не крашится
+function safeFixed(value: number | undefined | null, digits = 2): string {
+  if (value == null || isNaN(value)) return "N/A";
+  return value.toFixed(digits);
+}
+
 export default function TickerDetail() {
   const { idOrSymbol } = useParams();
   const { user } = useAuth();
@@ -107,18 +118,17 @@ export default function TickerDetail() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
   const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationType, setOperationType] = useState<OperationType>("BUY");
-  
+
   const [tickerApiData, setTickerApiData] = useState<TickerPageView | null>(null);
   const [priceData, setPriceData] = useState<CurrentPriceResponseDto | null>(null);
   const [news, setNews] = useState<NewsDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'profile'>('overview');
   const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>(ChartPeriod.ONE_MONTH);
@@ -128,18 +138,17 @@ export default function TickerDetail() {
   const createTransaction = useCreateTransaction();
 
   useEffect(() => {
-    // Determine if it's a UUID or a symbol. 
-    // In this app, instrumentId is a UUID, and idOrSymbol can be either.
     const isUuid = idOrSymbol?.includes("-");
-    
+
     const fetchData = (id: string) => {
       setIsLoading(true);
-      setIsPriceLoading(true);
-      
+
       customFetch<TickerPageView>(`/api/v1/instruments/${id}`)
         .then(data => {
-          console.log("[DEBUG] Ticker data received:", data);
           setTickerApiData(data);
+          if (data.currPrice) {
+            setPriceData(data.currPrice);
+          }
           setIsLoading(false);
         })
         .catch(err => {
@@ -147,25 +156,17 @@ export default function TickerDetail() {
           setIsLoading(false);
         });
 
-      customFetch<CurrentPriceResponseDto>(`/api/v1/prices/now/instrument/${id}`)
-        .then(data => {
-          console.log("[DEBUG] Price data received:", data);
-          setPriceData(data);
-          setIsPriceLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch ticker price:", err);
-          setIsPriceLoading(false);
-        });
-
       setIsNewsLoading(true);
       customFetch<NewsDto[]>(`/api/v1/news/instrument/${id}`)
         .then(data => {
-          setNews(data);
+          // Защита: news всегда должен быть массивом
+          setNews(Array.isArray(data) ? data : []);
           setIsNewsLoading(false);
         })
         .catch(err => {
           console.error("Failed to fetch news:", err);
+          // При ошибке (401, 403, 500) — просто пустой список, не крашимся
+          setNews([]);
           setIsNewsLoading(false);
         });
     };
@@ -174,7 +175,6 @@ export default function TickerDetail() {
       if (isUuid) {
         fetchData(idOrSymbol);
       } else {
-        // If it's a symbol, try to find the instrument ID first
         setIsLoading(true);
         customFetch<any[]>(`/api/v1/instruments/search?query=${idOrSymbol}&limit=1`)
           .then(results => {
@@ -194,10 +194,8 @@ export default function TickerDetail() {
   }, [idOrSymbol]);
 
   useEffect(() => {
-    // We use tickerApiData?.instrumentId because it will be available 
-    // after we've resolved a symbol to an ID or if we started with a UUID.
     const effectiveId = tickerApiData?.instrumentId;
-    
+
     if (effectiveId) {
       setIsChartLoading(true);
       customFetch<PriceHistoryChartResponse>(`/api/v1/prices/price-chart/instrument/${effectiveId}?period=${selectedPeriod}`)
@@ -216,33 +214,34 @@ export default function TickerDetail() {
 
   const ticker = useMemo(() => {
     if (tickerApiData) {
-      // Create a ticker object even if profile is partially missing
-      const profile = tickerApiData.profile || {};
-      const keyStats = tickerApiData.keyStats || {};
-      const details = profile.details || {};
+      const profile = tickerApiData.profile ?? {};
+      const keyStats = tickerApiData.keyStats ?? {};
+      const details = profile.details ?? {};
+      const currPrice = tickerApiData.currPrice || priceData;
 
       return {
-        symbol: priceData?.symbol || profile.name?.split(' ')[0].toUpperCase() || idOrSymbol?.toUpperCase() || "UNKNOWN",
-        name: profile.name || "Unknown Company",
-        price: priceData?.price || 0,
-        change: priceData?.todayChange?.value || 0,
-        changePercent: priceData?.todayChange?.ratio || 0,
-        currency: priceData?.currency || "USD",
-        about: details.description || "",
-        marketCap: keyStats.marketCap?.toLocaleString() || "N/A",
-        peRatio: keyStats.peRatio || 0,
-        week52High: keyStats.High52W || 0,
-        week52Low: keyStats.Low52W || 0,
+        symbol: currPrice?.symbol ?? profile.name?.split(' ')[0].toUpperCase() ?? idOrSymbol?.toUpperCase() ?? "UNKNOWN",
+        name: profile.name ?? "Unknown Company",
+        price: currPrice?.price ?? 0,
+        change: currPrice?.todayChange?.value ?? 0,
+        changePercent: currPrice?.todayChange?.ratio ?? 0,
+        currency: currPrice?.currency ?? "USD",
+        about: details.description ?? "",
+        marketCap: keyStats.marketCap?.toLocaleString() ?? "N/A",
+        peRatio: keyStats.peTtmRatio ?? keyStats.peRatio ?? null,
+        epsTtm: keyStats.epsTtm ?? null,
+        week52High: keyStats.high52W ?? keyStats.High52W ?? null,
+        week52Low: keyStats.low52W ?? keyStats.Low52W ?? null,
       };
     }
     return null;
   }, [tickerApiData, priceData, idOrSymbol]);
-  
+
   const chartData = useMemo(() => {
-    if (chartHistory && chartHistory.points) {
+    if (chartHistory?.points) {
       return chartHistory.points.map(point => ({
-        date: new Date(point.timestamp).toLocaleDateString(undefined, { 
-          month: 'short', 
+        date: new Date(point.timestamp).toLocaleDateString(undefined, {
+          month: 'short',
           day: 'numeric',
           hour: selectedPeriod === ChartPeriod.ONE_DAY ? '2-digit' : undefined,
           minute: selectedPeriod === ChartPeriod.ONE_DAY ? '2-digit' : undefined
@@ -279,7 +278,7 @@ export default function TickerDetail() {
 
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Authentication required",
@@ -324,7 +323,6 @@ export default function TickerDetail() {
         }
       });
 
-      // Refresh portfolio data in cache if it exists
       queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios", lastPortfolioId] });
 
       setIsDialogOpen(false);
@@ -360,9 +358,7 @@ export default function TickerDetail() {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content - Left Side (2 cols) */}
         <div className="lg:col-span-3 space-y-8">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -370,11 +366,11 @@ export default function TickerDetail() {
                 <span className="text-xl text-muted-foreground">{ticker.name}</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold tracking-tighter">${ticker.price.toFixed(2)}</span>
+                <span className="text-4xl font-bold tracking-tighter">${safeFixed(ticker.price)}</span>
                 {ticker.price > 0 && (
                   <span className={`text-lg font-medium flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
                     {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                    {isPositive ? '+' : ''}{ticker.change.toFixed(2)} ({isPositive ? '+' : ''}{ticker.changePercent.toFixed(2)}%)
+                    {isPositive ? '+' : ''}{safeFixed(ticker.change)} ({isPositive ? '+' : ''}{safeFixed(ticker.changePercent)}%)
                   </span>
                 )}
               </div>
@@ -382,9 +378,8 @@ export default function TickerDetail() {
                 {isMarketDataReal ? "Real-time Market Data" : "Mock Market Data • Delayed"}
               </p>
 
-              {/* Navigation Tabs */}
               <div className="flex gap-2 mt-6">
-                <Button 
+                <Button
                   variant={activeTab === 'overview' ? "default" : "outline"}
                   size="sm"
                   onClick={() => setActiveTab('overview')}
@@ -392,7 +387,7 @@ export default function TickerDetail() {
                 >
                   Overview
                 </Button>
-                <Button 
+                <Button
                   variant={activeTab === 'profile' ? "default" : "outline"}
                   size="sm"
                   onClick={() => setActiveTab('profile')}
@@ -403,19 +398,18 @@ export default function TickerDetail() {
               </div>
             </div>
 
-            {/* Header Actions */}
             <div className="flex items-center gap-3 self-start md:self-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="font-semibold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
                 onClick={openDialogWithCurrentPrice}
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Add to Portfolio
               </Button>
-              <Button 
+              <Button
                 variant="outline"
-                size="lg" 
+                size="lg"
                 className="font-semibold border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                 onClick={() => toast({ title: "Coming Soon", description: "Watchlist feature is under development." })}
               >
@@ -427,9 +421,7 @@ export default function TickerDetail() {
 
           {activeTab === 'overview' ? (
             <div className="space-y-8">
-              {/* Chart and Key Stats row */}
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-                {/* Chart - Left (2 cols on xl) */}
                 <div className="xl:col-span-2 bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <h3 className="font-display font-bold text-lg flex items-center gap-2">
@@ -468,25 +460,25 @@ export default function TickerDetail() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="hsl(var(--muted-foreground))" 
+                        <XAxis
+                          dataKey="date"
+                          stroke="hsl(var(--muted-foreground))"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           minTickGap={30}
                         />
-                        <YAxis 
-                          domain={['auto', 'auto']} 
-                          stroke="hsl(var(--muted-foreground))" 
+                        <YAxis
+                          domain={['auto', 'auto']}
+                          stroke="hsl(var(--muted-foreground))"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           tickFormatter={(value) => `$${value}`}
                         />
-                        <RechartsTooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--card))', 
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
                             borderColor: 'hsl(var(--border))',
                             borderRadius: '0.75rem',
                             boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
@@ -495,10 +487,10 @@ export default function TickerDetail() {
                           itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
                           formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
                         />
-                        <Line 
-                          type="monotone" 
-                          dataKey="price" 
-                          stroke={chartColor} 
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke={chartColor}
                           strokeWidth={3}
                           dot={false}
                           activeDot={{ r: 6, fill: chartColor, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
@@ -508,33 +500,26 @@ export default function TickerDetail() {
                   </div>
                 </div>
 
-                {/* Key Statistics - Right (1 col on xl) */}
                 <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm self-stretch">
                   <h3 className="text-xl font-display font-bold mb-6 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-primary" /> Key Statistics
                   </h3>
                   <div className="space-y-4">
                     <StatRow label="Market Cap" value={ticker.marketCap} icon={DollarSign} />
-                    <StatRow 
-                      label="P/E Ratio" 
-                      value={ticker.peRatio !== undefined ? (typeof ticker.peRatio === 'number' ? ticker.peRatio.toFixed(2) : ticker.peRatio) : 'N/A'} 
-                    />
-                    <StatRow 
-                      label="EPS (TTM)" 
-                      value={tickerApiData ? `$${tickerApiData.keyStats.epsTtm.toFixed(2)}` : 'N/A'} 
-                    />
-                    <StatRow label="52W High" value={`$${ticker.week52High.toFixed(2)}`} />
-                    <StatRow label="52W Low" value={`$${ticker.week52Low.toFixed(2)}`} />
+                    <StatRow label="P/E Ratio" value={ticker.peRatio != null ? safeFixed(ticker.peRatio) : "N/A"} />
+                    {/* БЫЛО: tickerApiData.keyStats.epsTtm.toFixed(2) — крашилось если null */}
+                    <StatRow label="EPS (TTM)" value={ticker.epsTtm != null ? `$${safeFixed(ticker.epsTtm)}` : "N/A"} />
+                    <StatRow label="52W High" value={ticker.week52High != null ? `$${safeFixed(ticker.week52High)}` : "N/A"} />
+                    <StatRow label="52W Low" value={ticker.week52Low != null ? `$${safeFixed(ticker.week52Low)}` : "N/A"} />
                   </div>
                 </div>
               </div>
 
-              {/* News */}
               <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
                 <h3 className="text-xl font-display font-bold mb-6 flex items-center gap-2">
                   <Newspaper className="w-5 h-5 text-primary" /> Latest News
                 </h3>
-                
+
                 {isNewsLoading ? (
                   <div className="flex flex-col items-center py-12 text-muted-foreground">
                     <Loader2 className="w-8 h-8 animate-spin mb-4" />
@@ -543,18 +528,18 @@ export default function TickerDetail() {
                 ) : news.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {news.map((item) => (
-                      <a 
-                        key={item.id} 
-                        href={item.url} 
-                        target="_blank" 
+                      <a
+                        key={item.id}
+                        href={item.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="group flex flex-col sm:flex-row gap-4 p-4 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border/50"
                       >
                         {item.image && (
                           <div className="w-full sm:w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                            <img 
-                              src={item.image} 
-                              alt={item.headline} 
+                            <img
+                              src={item.image}
+                              alt={item.headline}
                               className="w-full h-full object-cover transition-transform group-hover:scale-105"
                             />
                           </div>
@@ -587,57 +572,34 @@ export default function TickerDetail() {
               </div>
             </div>
           ) : (
-        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-sm">
-          <h3 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-primary" /> Company Profile
-          </h3>
-          <div className="space-y-6">
-            <p className="text-muted-foreground leading-relaxed">
-              This section will display detailed company information, including history, executive team, and financial health.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <h4 className="font-bold mb-2 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-primary" /> Core Business
-                </h4>
-                <p className="text-sm text-muted-foreground">Detailed business operations data will be available soon.</p>
-              </div>
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <h4 className="font-bold mb-2 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Leadership
-                </h4>
-                <p className="text-sm text-muted-foreground">Executive team profiles and organizational structure details.</p>
+            <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-sm">
+              <h3 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                <Building2 className="w-6 h-6 text-primary" /> Company Profile
+              </h3>
+              <div className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  This section will display detailed company information, including history, executive team, and financial health.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                    <h4 className="font-bold mb-2 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-primary" /> Core Business
+                    </h4>
+                    <p className="text-sm text-muted-foreground">Detailed business operations data will be available soon.</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                    <h4 className="font-bold mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" /> Leadership
+                    </h4>
+                    <p className="text-sm text-muted-foreground">Executive team profiles and organizational structure details.</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* No sidebar - content is full width with internal grid */}
-      <div className="hidden">
-        <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-xl font-display font-bold mb-6 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" /> Key Statistics
-            </h3>
-            <div className="space-y-4">
-              <StatRow label="Market Cap" value={ticker.marketCap} icon={DollarSign} />
-              <StatRow 
-                label="P/E Ratio" 
-                value={ticker.peRatio !== undefined ? (typeof ticker.peRatio === 'number' ? ticker.peRatio.toFixed(2) : ticker.peRatio) : 'N/A'} 
-              />
-              <StatRow 
-                label="EPS (TTM)" 
-                value={tickerApiData?.keyStats?.epsTtm !== undefined ? `$${tickerApiData.keyStats.epsTtm.toFixed(2)}` : 'N/A'} 
-              />
-              <StatRow label="52W High" value={`$${ticker.week52High.toFixed(2)}`} />
-              <StatRow label="52W Low" value={`$${ticker.week52Low.toFixed(2)}`} />
-            </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
 
-    {/* Add Position Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -658,7 +620,6 @@ export default function TickerDetail() {
                   className="h-10 bg-background"
                 />
               </div>
-              
               <div className="grid gap-2">
                 <Label htmlFor="shares">Number of Shares</Label>
                 <Input
@@ -691,8 +652,8 @@ export default function TickerDetail() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="font-semibold shadow-md shadow-primary/20"
                 disabled={createTransaction.isPending}
               >

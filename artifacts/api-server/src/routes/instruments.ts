@@ -14,10 +14,13 @@ interface InstrumentDto {
 
 interface InstrumentKeyStatsDto {
   marketCap: number;
-  peRatio: number;
+  peRatio?: number;
+  peTtmRatio?: number;
   epsTtm: number; // Trailing Twelve Months
-  High52W: number;
-  Low52W: number;
+  high52W?: number;
+  low52W?: number;
+  High52W?: number;
+  Low52W?: number;
 }
 
 interface InstrumentDetailsDto {
@@ -36,6 +39,7 @@ interface InstrumentProfileDto {
 
 interface TickerPageView {
   instrumentId: string;
+  currPrice?: CurrentPriceResponseDto;
   profile: InstrumentProfileDto;
   keyStats: InstrumentKeyStatsDto;
 }
@@ -66,6 +70,16 @@ const INSTRUMENTS: InstrumentDto[] = [
 const TICKER_PAGES: Record<string, TickerPageView> = {
   "550e8400-e29b-41d4-a716-446655440000": {
     instrumentId: "550e8400-e29b-41d4-a716-446655440000",
+    currPrice: {
+      symbol: "AAPL",
+      price: 187.32,
+      currency: "USD",
+      todayChange: {
+        value: 1.24,
+        ratio: 0.67,
+        trend: "UP"
+      }
+    },
     profile: {
       name: "Apple Inc.",
       founded: "1976",
@@ -77,10 +91,10 @@ const TICKER_PAGES: Record<string, TickerPageView> = {
     },
     keyStats: {
       marketCap: 2.8e12,
-      peRatio: 28.5,
+      peTtmRatio: 28.5,
       epsTtm: 6.42,
-      High52W: 198.23,
-      Low52W: 143.90,
+      high52W: 198.23,
+      low52W: 143.90,
     }
   },
   // Add others if needed...
@@ -239,9 +253,20 @@ router.get("/api/v1/instruments/:id", (req, res) => {
   } else {
     // Fallback if not in TICKER_PAGES but in INSTRUMENTS
     const inst = INSTRUMENTS.find(i => i.id === id);
+    const priceData = INSTRUMENT_PRICES[id];
     if (inst) {
       res.json({
         instrumentId: inst.id,
+        currPrice: priceData || {
+          symbol: inst.symbol,
+          price: 150.00,
+          currency: inst.currency,
+          todayChange: {
+            value: 0.00,
+            ratio: 0.00,
+            trend: "FLAT"
+          }
+        },
         profile: {
           name: inst.name,
           founded: "N/A",
@@ -253,10 +278,10 @@ router.get("/api/v1/instruments/:id", (req, res) => {
         },
         keyStats: {
           marketCap: 0,
-          peRatio: 0,
+          peTtmRatio: 0,
           epsTtm: 0,
-          High52W: 0,
-          Low52W: 0,
+          high52W: 0,
+          low52W: 0,
         }
       });
     } else {
