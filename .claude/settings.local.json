@@ -4,7 +4,16 @@
       "Bash(xargs head:*)",
       "Bash(git mv:*)",
       "Bash(fuser -v artifacts/tickertrack)",
-      "Bash(cmd.exe:*)"
+      "Bash(cmd.exe:*)",
+      "Bash(rm -rf /d/Projects/SS/web-app/artifacts/api-server)",
+      "Bash(rm -rf /d/Projects/SS/web-app/lib/db)",
+      "Bash(rm -rf /d/Projects/SS/web-app/lib/api-zod)",
+      "Bash(rm -rf \"/d/Projects/SS/web-app/artifacts/api-server\")",
+      "Bash(rm -rf \"/d/Projects/SS/web-app/lib/db\")",
+      "Bash(rm -rf \"/d/Projects/SS/web-app/lib/api-zod\")",
+      "Bash(cmd //c \"rd /s /q \\\\\"D:\\\\Projects\\\\SS\\\\web-app\\\\artifacts\\\\api-server\\\\\"\")",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force 'D:\\\\Projects\\\\SS\\\\web-app\\\\artifacts\\\\api-server'\")",
+      "Bash(powershell -Command 'Get-Process | Where-Object { $_.MainWindowTitle -like '\\\\''*api*'\\\\'' -or $_.ProcessName -eq '\\\\''node'\\\\'' }')"
     ]
   }
 }

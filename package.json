@@ -4,16 +4,14 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "node -e \"const fs = require('fs'); ['package-lock.json', 'yarn.lock'].forEach(f => fs.existsSync(f) && fs.unlinkSync(f))\"",
-    "start": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": "cross-env PORT=5000 pnpm --filter @workspace/api-server dev",
-    "dev:web": "cross-env PORT=3000 BASE_PATH=/ pnpm --filter @workspace/stockscreener dev",
+    "start": "cross-env PORT=3000 BASE_PATH=/ pnpm --filter @workspace/stockscreener dev",
+    "dev": "cross-env PORT=3000 BASE_PATH=/ pnpm --filter @workspace/stockscreener dev",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
