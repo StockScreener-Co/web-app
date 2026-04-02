@@ -31,10 +31,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build TickerTrack
+      - name: Build StockScreener
         # Мы заходим именно в папку фронтенда и запускаем сборку там
         run: |
-          cd artifacts/tickertrack
+          cd artifacts/stockscreener
           pnpm build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # ВАЖНО: указываем путь до папки dist внутри твоего фронтенда
-          path: 'artifacts/tickertrack/dist'
+          path: 'artifacts/stockscreener/dist'
 
   deploy:
     needs: build
