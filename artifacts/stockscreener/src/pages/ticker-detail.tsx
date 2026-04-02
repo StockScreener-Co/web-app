@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader2, BookmarkPlus, Calendar, Info, Building2, Briefcase, Users, MapPin, Newspaper, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader2, BookmarkPlus, Building2, Users, MapPin, Newspaper, ExternalLink, Phone, Globe, Landmark, BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { customFetch, useCreateTransaction } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { OperationType } from "@/lib/api-client";
+import type { OperationType, CompanyProfileDto } from "@/lib/api-client";
 
 export interface TickerData {
   symbol: string;
@@ -131,6 +131,9 @@ export default function TickerDetail() {
   const [isLoading, setIsLoading] = useState(false);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'profile'>('overview');
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfileDto | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [profileFetched, setProfileFetched] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>(ChartPeriod.ONE_MONTH);
   const [chartHistory, setChartHistory] = useState<PriceHistoryChartResponse | null>(null);
   const [isChartLoading, setIsChartLoading] = useState(false);
@@ -351,6 +354,24 @@ export default function TickerDetail() {
 
   const isMarketDataReal = tickerApiData && ticker.price > 0;
 
+  const handleProfileTabClick = () => {
+    setActiveTab('profile');
+    const instrumentId = tickerApiData?.instrumentId;
+    if (!instrumentId || profileFetched) return;
+    setIsProfileLoading(true);
+    customFetch<CompanyProfileDto>(`/api/v1/instruments/${instrumentId}/profile`)
+      .then(data => {
+        setCompanyProfile(data);
+        setProfileFetched(true);
+        setIsProfileLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch company profile:", err);
+        setProfileFetched(true);
+        setIsProfileLoading(false);
+      });
+  };
+
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8">
       <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8">
@@ -390,7 +411,7 @@ export default function TickerDetail() {
                 <Button
                   variant={activeTab === 'profile' ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setActiveTab('profile')}
+                  onClick={handleProfileTabClick}
                   className="rounded-full px-6"
                 >
                   Profile
@@ -576,25 +597,92 @@ export default function TickerDetail() {
               <h3 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
                 <Building2 className="w-6 h-6 text-primary" /> Company Profile
               </h3>
-              <div className="space-y-6">
-                <p className="text-muted-foreground leading-relaxed">
-                  This section will display detailed company information, including history, executive team, and financial health.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                    <h4 className="font-bold mb-2 flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-primary" /> Core Business
-                    </h4>
-                    <p className="text-sm text-muted-foreground">Detailed business operations data will be available soon.</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                    <h4 className="font-bold mb-2 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" /> Leadership
-                    </h4>
-                    <p className="text-sm text-muted-foreground">Executive team profiles and organizational structure details.</p>
+
+              {isProfileLoading ? (
+                <div className="flex flex-col items-center py-16 text-muted-foreground">
+                  <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                  <p>Loading profile...</p>
+                </div>
+              ) : !companyProfile ? (
+                <div className="py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border/50">
+                  <Building2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p>No profile data available for this instrument.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {companyProfile.description && (
+                    <div>
+                      <h4 className="font-bold text-lg mb-3">About</h4>
+                      <p className="text-muted-foreground leading-relaxed">{companyProfile.description}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                      <h4 className="font-bold flex items-center gap-2">
+                        <BriefcaseBusiness className="w-4 h-4 text-primary" /> Business
+                      </h4>
+                      {companyProfile.sector && <ProfileRow label="Sector" value={companyProfile.sector} />}
+                      {companyProfile.industry && <ProfileRow label="Industry" value={companyProfile.industry} />}
+                      {companyProfile.type && <ProfileRow label="Type" value={companyProfile.type} />}
+                      {companyProfile.exchange && <ProfileRow label="Exchange" value={companyProfile.exchange} />}
+                      {companyProfile.micCode && <ProfileRow label="MIC Code" value={companyProfile.micCode} />}
+                    </div>
+
+                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                      <h4 className="font-bold flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" /> Leadership
+                      </h4>
+                      {companyProfile.ceo && <ProfileRow label="CEO" value={companyProfile.ceo} />}
+                      {companyProfile.employees != null && companyProfile.employees > 0 && (
+                        <ProfileRow label="Employees" value={companyProfile.employees.toLocaleString()} />
+                      )}
+                    </div>
+
+                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                      <h4 className="font-bold flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary" /> Location
+                      </h4>
+                      {companyProfile.address && <ProfileRow label="Address" value={companyProfile.address} />}
+                      {companyProfile.address2 && <ProfileRow label="" value={companyProfile.address2} />}
+                      {companyProfile.city && <ProfileRow label="City" value={companyProfile.city} />}
+                      {companyProfile.state && <ProfileRow label="State" value={companyProfile.state} />}
+                      {companyProfile.zip && <ProfileRow label="ZIP" value={companyProfile.zip} />}
+                      {companyProfile.country && <ProfileRow label="Country" value={companyProfile.country} />}
+                    </div>
+
+                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                      <h4 className="font-bold flex items-center gap-2">
+                        <Landmark className="w-4 h-4 text-primary" /> Contact
+                      </h4>
+                      {companyProfile.phone && (
+                        <div className="flex items-center justify-between py-1 border-b border-border/30 last:border-0">
+                          <span className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Phone className="w-3.5 h-3.5 opacity-50" /> Phone
+                          </span>
+                          <span className="font-medium text-sm">{companyProfile.phone}</span>
+                        </div>
+                      )}
+                      {companyProfile.website && (
+                        <div className="flex items-center justify-between py-1 border-b border-border/30 last:border-0">
+                          <span className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Globe className="w-3.5 h-3.5 opacity-50" /> Website
+                          </span>
+                          <a
+                            href={companyProfile.website.startsWith('http') ? companyProfile.website : `https://${companyProfile.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-sm text-primary hover:underline flex items-center gap-1"
+                          >
+                            {companyProfile.website.replace(/^https?:\/\//, '')}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -664,6 +752,15 @@ export default function TickerDetail() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-center justify-between py-1 border-b border-border/30 last:border-0">
+      {label && <span className="text-sm text-muted-foreground">{label}</span>}
+      <span className={`font-medium text-sm ${!label ? "text-muted-foreground" : "text-foreground"}`}>{value}</span>
     </div>
   );
 }

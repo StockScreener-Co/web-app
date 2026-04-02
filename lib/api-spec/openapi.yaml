@@ -142,6 +142,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionResponseDto"
+  /v1/instruments/{instrumentId}/profile:
+    get:
+      operationId: getInstrumentProfile
+      tags: [instruments]
+      summary: Get company profile for an instrument
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyProfileDto"
   /v1/instruments/search:
     get:
       operationId: searchInstruments
@@ -359,6 +378,45 @@ components:
         - value
         - ratio
         - trend
+    CompanyProfileDto:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        sector:
+          type: string
+        industry:
+          type: string
+        type:
+          type: string
+        country:
+          type: string
+        state:
+          type: string
+        city:
+          type: string
+        zip:
+          type: string
+        address:
+          type: string
+        address2:
+          type: string
+        phone:
+          type: string
+        website:
+          type: string
+        exchange:
+          type: string
+        micCode:
+          type: string
+        ceo:
+          type: string
+        employees:
+          type: integer
+        description:
+          type: string
     MetricCardOld:
       type: object
       properties:

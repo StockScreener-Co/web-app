@@ -109,6 +109,27 @@ export interface InstrumentMostPopularDto {
   isDataComplete: boolean;
 }
 
+export interface CompanyProfileDto {
+  symbol?: string;
+  name?: string;
+  sector?: string;
+  industry?: string;
+  type?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  zip?: string;
+  address?: string;
+  address2?: string;
+  phone?: string;
+  website?: string;
+  exchange?: string;
+  micCode?: string;
+  ceo?: string;
+  employees?: number;
+  description?: string;
+}
+
 export type SearchInstrumentsParams = {
   query: string;
   limit?: number;

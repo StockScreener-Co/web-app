@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  CompanyProfileDto,
   HealthStatus,
   InstrumentDto,
   InstrumentMostPopularDto,
@@ -685,6 +686,101 @@ export const useCreateTransaction = <
 > => {
   return useMutation(getCreateTransactionMutationOptions(options));
 };
+
+/**
+ * @summary Get company profile for an instrument
+ */
+export const getGetInstrumentProfileUrl = (instrumentId: string) => {
+  return `/api/v1/instruments/${instrumentId}/profile`;
+};
+
+export const getInstrumentProfile = async (
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<CompanyProfileDto> => {
+  return customFetch<CompanyProfileDto>(
+    getGetInstrumentProfileUrl(instrumentId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetInstrumentProfileQueryKey = (instrumentId: string) => {
+  return [`/api/v1/instruments/${instrumentId}/profile`] as const;
+};
+
+export const getGetInstrumentProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInstrumentProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetInstrumentProfileQueryKey(instrumentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getInstrumentProfile>>
+  > = ({ signal }) =>
+    getInstrumentProfile(instrumentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instrumentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInstrumentProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInstrumentProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInstrumentProfile>>
+>;
+export type GetInstrumentProfileQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get company profile for an instrument
+ */
+
+export function useGetInstrumentProfile<
+  TData = Awaited<ReturnType<typeof getInstrumentProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInstrumentProfileQueryOptions(
+    instrumentId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Search instruments
