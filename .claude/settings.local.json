@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs head:*)",
+      "Bash(git mv:*)",
+      "Bash(fuser -v artifacts/tickertrack)",
+      "Bash(cmd.exe:*)"
+    ]
+  }
+}
