@@ -74,6 +74,7 @@ interface CurrentPriceResponseDto {
 
 interface TickerPageView {
   instrumentId: string;
+  companyName?: string;
   currPrice?: CurrentPriceResponseDto;
   profile?: {
     name?: string;
@@ -224,7 +225,7 @@ export default function TickerDetail() {
 
       return {
         symbol: currPrice?.symbol ?? profile.name?.split(' ')[0].toUpperCase() ?? idOrSymbol?.toUpperCase() ?? "UNKNOWN",
-        name: profile.name ?? "Unknown Company",
+        name: tickerApiData.companyName ?? profile.name ?? "Unknown Company",
         price: currPrice?.price ?? 0,
         change: currPrice?.todayChange?.value ?? 0,
         changePercent: currPrice?.todayChange?.ratio ?? 0,
