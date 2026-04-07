@@ -118,6 +118,26 @@ paths:
                 items:
                   $ref: "#/components/schemas/InstrumentMostPopularDto"
   /v1/transactions/portfolio/{portfolioId}:
+    get:
+      operationId: getTransactionsForPortfolio
+      tags: [transactions]
+      summary: List all transactions for a portfolio
+      parameters:
+        - name: portfolioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionResponseDto"
     post:
       operationId: createTransaction
       tags: [transactions]
@@ -142,6 +162,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionResponseDto"
+  /v1/transactions/{transactionId}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      summary: Edit a transaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionRequestDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponseDto"
+    delete:
+      operationId: deleteTransaction
+      tags: [transactions]
+      summary: Delete a transaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No content
   /v1/instruments/{instrumentId}/profile:
     get:
       operationId: getInstrumentProfile
@@ -186,6 +245,69 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/InstrumentDto"
+  /v1/instruments/{instrumentId}:
+    get:
+      operationId: getInstrumentById
+      tags: [instruments]
+      summary: Get instrument page view
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstrumentPageViewDto"
+  /v1/news/instrument/{instrumentId}:
+    get:
+      operationId: getNewsForInstrument
+      tags: [news]
+      summary: Get latest news for instrument
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsDto"
+  /v1/prices/price-chart/instrument/{instrumentId}:
+    get:
+      operationId: getPriceChartForInstrument
+      tags: [prices]
+      summary: Get price chart for instrument
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: period
+          in: query
+          schema:
+            $ref: "#/components/schemas/ChartPeriod"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceHistoryChartResponseDto"
 components:
   schemas:
     OperationType:
@@ -218,6 +340,9 @@ components:
         id:
           type: string
           format: uuid
+        instrumentId:
+          type: string
+          format: uuid
         quantity:
           type: number
         price:
@@ -231,6 +356,7 @@ components:
           type: string
       required:
         - id
+        - instrumentId
         - quantity
         - price
         - tradeDate
@@ -430,4 +556,111 @@ components:
           type: boolean
       required:
         - value
+    InstrumentCurrentPriceDto:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        todayChange:
+          $ref: "#/components/schemas/MetricCard"
+    InstrumentPageViewDto:
+      type: object
+      properties:
+        instrumentId:
+          type: string
+          format: uuid
+        companyName:
+          type: string
+        currPrice:
+          $ref: "#/components/schemas/InstrumentCurrentPriceDto"
+        keyStats:
+          type: object
+          properties:
+            marketCap:
+              type: number
+            peRatio:
+              type: number
+            peTtmRatio:
+              type: number
+            epsTtm:
+              type: number
+            high52W:
+              type: number
+            low52W:
+              type: number
+            volume:
+              type: number
+            dividendYield:
+              type: number
+            beta:
+              type: number
+            revenueTtm:
+              type: number
+            netIncomeTtm:
+              type: number
+        profile:
+          type: object
+          properties:
+            name:
+              type: string
+            details:
+              type: object
+              properties:
+                description:
+                  type: string
+    NewsDto:
+      type: object
+      properties:
+        id:
+          type: string
+        datetime:
+          type: string
+        headline:
+          type: string
+        source:
+          type: string
+        url:
+          type: string
+        image:
+          type: string
+      required:
+        - id
+        - headline
+        - source
+        - url
+    PriceHistoryChartResponseDto:
+      type: object
+      properties:
+        symbol:
+          type: string
+        currency:
+          type: string
+        period:
+          $ref: "#/components/schemas/ChartPeriod"
+        interval:
+          $ref: "#/components/schemas/ChartInterval"
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartPointDto"
+    ChartPeriod:
+      type: string
+      enum: [ONE_DAY, FIVE_DAYS, ONE_MONTH, THREE_MONTHS, SIX_MONTHS, YTD, ONE_YEAR, FIVE_YEARS, ALL]
+    ChartInterval:
+      type: string
+      enum: [ONE_MINUTE, TEN_MINUTES, ONE_DAY, ONE_WEEK]
+    ChartPointDto:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        price:
+          type: number
+      required:
+        - timestamp
+        - price
 
