@@ -13,11 +13,29 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Columns3 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Columns3, Pencil, Trash2 } from "lucide-react";
 import { usePortfolioColumns, type ColumnId } from "@/hooks/use-portfolio-columns";
-import { useGetPortfolioById, useCreateTransaction, useSearchInstruments } from "@/lib/api-client";
+import {
+  useGetPortfolioById,
+  useCreateTransaction,
+  useSearchInstruments,
+  useGetTransactionsForPortfolio,
+  useUpdateTransaction,
+  useDeleteTransaction,
+} from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { OperationType } from "@/lib/api-client";
+import type { OperationType, TransactionResponseDto } from "@/lib/api-client";
 
 export default function Portfolio() {
   const { user } = useAuth();
@@ -36,6 +54,8 @@ export default function Portfolio() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [formError, setFormError] = useState("");
+  const [editingTx, setEditingTx] = useState<TransactionResponseDto | null>(null);
+  const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
 
   const search = useSearch();
   const currentPortfolioId = useMemo(() => new URLSearchParams(search).get('id'), [search]);
@@ -66,7 +86,19 @@ export default function Portfolio() {
   });
 
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
+  const deleteTransaction = useDeleteTransaction();
   const { visibleColumns, toggleColumn, allColumns } = usePortfolioColumns();
+
+  const { data: transactions, isLoading: isTransactionsLoading } = useGetTransactionsForPortfolio(
+    currentPortfolioId!,
+    {
+      query: {
+        enabled: !!user && !!currentPortfolioId,
+        queryKey: [`/api/v1/transactions/portfolio/${currentPortfolioId}`],
+      },
+    }
+  );
 
   const portfolioName = portfolio?.name || "Portfolio";
 
@@ -120,6 +152,75 @@ export default function Portfolio() {
     } catch (err: any) {
       setFormError(err.message || "Failed to add transaction");
     }
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError("");
+
+    if (!editingTx || !form.instrumentId) {
+      setFormError("Missing instrument");
+      return;
+    }
+
+    try {
+      await updateTransaction.mutateAsync({
+        transactionId: editingTx.id,
+        data: {
+          instrumentId: form.instrumentId,
+          quantity: parseFloat(form.quantity),
+          price: parseFloat(form.price),
+          tradeDate: form.tradeDate,
+          operationType: form.operationType,
+        },
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: [`/api/v1/transactions/portfolio/${currentPortfolioId}`],
+      });
+
+      setShowAdd(false);
+      setEditingTx(null);
+      setForm({
+        instrumentId: "",
+        ticker: "",
+        quantity: "",
+        price: "",
+        tradeDate: new Date().toISOString().split("T")[0],
+        operationType: "BUY",
+      });
+      setSearchTerm("");
+    } catch (err: any) {
+      setFormError(err.message || "Failed to update transaction");
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingTxId) return;
+    try {
+      await deleteTransaction.mutateAsync({ transactionId: deletingTxId });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/v1/transactions/portfolio/${currentPortfolioId}`],
+      });
+      setDeletingTxId(null);
+    } catch (err: any) {
+      console.error("Failed to delete transaction:", err);
+      setDeletingTxId(null);
+    }
+  }
+
+  function openEditDialog(tx: TransactionResponseDto) {
+    setEditingTx(tx);
+    setForm({
+      instrumentId: tx.instrumentId,
+      ticker: tx.symbol,
+      quantity: String(tx.quantity),
+      price: String(tx.price),
+      tradeDate: tx.tradeDate,
+      operationType: tx.operationType,
+    });
+    setSearchTerm(tx.symbol);
+    setShowAdd(true);
   }
 
   if (!user || !currentPortfolioId) {
@@ -191,6 +292,7 @@ export default function Portfolio() {
       <Dialog open={showAdd} onOpenChange={(open) => {
         setShowAdd(open);
         if (!open) {
+          setEditingTx(null);
           setForm({
             instrumentId: "",
             ticker: "",
@@ -205,9 +307,9 @@ export default function Portfolio() {
       }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Position</DialogTitle>
+            <DialogTitle>{editingTx ? "Edit Transaction" : "Add Position"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-4 pt-2">
+          <form onSubmit={editingTx ? handleEdit : handleAdd} className="space-y-4 pt-2">
             {/* Instrument search */}
             <div className="relative">
               <Label className="mb-1.5 block">Search Instrument</Label>
@@ -322,9 +424,13 @@ export default function Portfolio() {
               <Button
                 type="submit"
                 className="w-full font-bold shadow-lg shadow-primary/20"
-                disabled={createTransaction.isPending}
+                disabled={createTransaction.isPending || updateTransaction.isPending}
               >
-                {createTransaction.isPending ? "Adding..." : "Add Transaction"}
+                {(createTransaction.isPending || updateTransaction.isPending)
+                  ? "Saving..."
+                  : editingTx
+                  ? "Save Changes"
+                  : "Add Transaction"}
               </Button>
             </DialogFooter>
           </form>
@@ -395,8 +501,15 @@ export default function Portfolio() {
             </motion.div>
           )}
 
-          {/* Holdings Table */}
-          <div>
+          <Tabs defaultValue="holdings">
+            <TabsList className="mb-4">
+              <TabsTrigger value="holdings">Holdings</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="holdings">
+            {/* Holdings Table */}
+            <div>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-2xl font-display font-bold">Holdings</h2>
               <Popover>
@@ -544,9 +657,100 @@ export default function Portfolio() {
                 </table>
               </div>
             </div>
-          </div>
+            </div>
+            </TabsContent>
+
+            <TabsContent value="transactions">
+              <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  {isTransactionsLoading ? (
+                    <div className="p-12 text-center text-muted-foreground">Loading transactions...</div>
+                  ) : !transactions || transactions.length === 0 ? (
+                    <div className="p-12 text-center text-muted-foreground">No transactions yet.</div>
+                  ) : (
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
+                          <th className="p-4 pl-6 font-semibold">Date</th>
+                          <th className="p-4 font-semibold">Symbol</th>
+                          <th className="p-4 font-semibold">Type</th>
+                          <th className="p-4 font-semibold text-right">Qty</th>
+                          <th className="p-4 font-semibold text-right">Price</th>
+                          <th className="p-4 font-semibold text-right">Total</th>
+                          <th className="p-4 pr-6 font-semibold text-center w-20">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        {transactions.map((tx) => (
+                          <tr key={tx.id} className="hover:bg-accent/20 transition-colors group">
+                            <td className="p-4 pl-6 text-sm text-muted-foreground">{tx.tradeDate}</td>
+                            <td className="p-4 font-bold">{tx.symbol}</td>
+                            <td className="p-4">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                tx.operationType === "BUY"
+                                  ? "bg-green-400/10 text-green-400"
+                                  : tx.operationType === "SELL"
+                                  ? "bg-destructive/10 text-destructive"
+                                  : "bg-secondary text-muted-foreground"
+                              }`}>
+                                {tx.operationType}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right font-medium">{tx.quantity}</td>
+                            <td className="p-4 text-right font-medium">{fmt(tx.price)}</td>
+                            <td className="p-4 text-right font-semibold">{fmt(tx.quantity * tx.price)}</td>
+                            <td className="p-4 pr-6 text-center">
+                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => openEditDialog(tx)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => setDeletingTxId(tx.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
+
+      <AlertDialog open={!!deletingTxId} onOpenChange={(open) => { if (!open) setDeletingTxId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+              disabled={deleteTransaction.isPending}
+            >
+              {deleteTransaction.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
