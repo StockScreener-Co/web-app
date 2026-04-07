@@ -48,3 +48,6 @@ Thumbs.db
 .cache/
 .local/
 /.junie/guidelines.md
+
+# Git worktrees
+.worktrees/
