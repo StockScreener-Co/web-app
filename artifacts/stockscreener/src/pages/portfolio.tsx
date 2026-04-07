@@ -146,6 +146,27 @@ export default function Portfolio() {
 
   const assets = portfolio?.assets || [];
 
+  const aggregates = useMemo(() => {
+    if (!assets.length) return null;
+    const totalValue = assets.reduce((s, a) => s + a.value, 0);
+    const todayPLDollar = assets.reduce((s, a) => s + a.todayChange.value, 0);
+    const todayPLPct =
+      totalValue - todayPLDollar !== 0
+        ? (todayPLDollar / (totalValue - todayPLDollar)) * 100
+        : 0;
+    const totalPLDollar = assets.reduce((s, a) => s + a.unrealizedPL.value, 0);
+    const totalCost = assets.reduce((s, a) => s + a.qty * a.avgPrice, 0);
+    const totalPLPct = totalCost > 0 ? (totalPLDollar / totalCost) * 100 : 0;
+    return {
+      totalValue,
+      todayPLDollar,
+      todayPLPct,
+      totalPLDollar,
+      totalPLPct,
+      positionCount: assets.length,
+    };
+  }, [assets]);
+
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
       {/* Header */}
@@ -332,6 +353,43 @@ export default function Portfolio() {
         </motion.div>
       ) : (
         <div className="space-y-8">
+          {/* Aggregates Header */}
+          {aggregates && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            >
+              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Portfolio</p>
+                <p className="text-2xl font-bold tracking-tight">{fmt(aggregates.totalValue)}</p>
+              </div>
+              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Today P&L</p>
+                <p className={`text-2xl font-bold tracking-tight ${aggregates.todayPLDollar > 0 ? "text-green-400" : aggregates.todayPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {aggregates.todayPLDollar >= 0 ? "+" : ""}{fmt(aggregates.todayPLDollar)}
+                </p>
+                <p className={`text-sm font-medium ${aggregates.todayPLDollar > 0 ? "text-green-400" : aggregates.todayPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {aggregates.todayPLPct >= 0 ? "+" : ""}{aggregates.todayPLPct.toFixed(2)}%
+                </p>
+              </div>
+              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total P&L</p>
+                <p className={`text-2xl font-bold tracking-tight ${aggregates.totalPLDollar > 0 ? "text-green-400" : aggregates.totalPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {aggregates.totalPLDollar >= 0 ? "+" : ""}{fmt(aggregates.totalPLDollar)}
+                </p>
+                <p className={`text-sm font-medium ${aggregates.totalPLDollar > 0 ? "text-green-400" : aggregates.totalPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {aggregates.totalPLPct >= 0 ? "+" : ""}{aggregates.totalPLPct.toFixed(2)}%
+                </p>
+              </div>
+              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Holdings</p>
+                <p className="text-2xl font-bold tracking-tight">{aggregates.positionCount}</p>
+                <p className="text-sm text-muted-foreground">positions</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Holdings Table */}
           <div>
             <h2 className="text-2xl font-display font-bold mb-5">Holdings</h2>
