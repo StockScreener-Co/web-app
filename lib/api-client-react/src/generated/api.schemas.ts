@@ -25,6 +25,7 @@ export interface TransactionRequestDto {
 
 export interface TransactionResponseDto {
   id: string;
+  instrumentId: string;
   quantity: number;
   price: number;
   tradeDate: string;
@@ -130,7 +131,94 @@ export interface CompanyProfileDto {
   description?: string;
 }
 
+export interface InstrumentCurrentPriceDto {
+  symbol?: string;
+  price?: number;
+  currency?: string;
+  todayChange?: MetricCard;
+}
+
+export type InstrumentPageViewDtoKeyStats = {
+  marketCap?: number;
+  peRatio?: number;
+  peTtmRatio?: number;
+  epsTtm?: number;
+  high52W?: number;
+  low52W?: number;
+  volume?: number;
+  dividendYield?: number;
+  beta?: number;
+  revenueTtm?: number;
+  netIncomeTtm?: number;
+};
+
+export type InstrumentPageViewDtoProfileDetails = {
+  description?: string;
+};
+
+export type InstrumentPageViewDtoProfile = {
+  name?: string;
+  details?: InstrumentPageViewDtoProfileDetails;
+};
+
+export interface InstrumentPageViewDto {
+  instrumentId?: string;
+  companyName?: string;
+  currPrice?: InstrumentCurrentPriceDto;
+  keyStats?: InstrumentPageViewDtoKeyStats;
+  profile?: InstrumentPageViewDtoProfile;
+}
+
+export interface NewsDto {
+  id: string;
+  datetime?: string;
+  headline: string;
+  source: string;
+  url: string;
+  image?: string;
+}
+
+export type ChartPeriod = (typeof ChartPeriod)[keyof typeof ChartPeriod];
+
+export const ChartPeriod = {
+  ONE_DAY: "ONE_DAY",
+  FIVE_DAYS: "FIVE_DAYS",
+  ONE_MONTH: "ONE_MONTH",
+  THREE_MONTHS: "THREE_MONTHS",
+  SIX_MONTHS: "SIX_MONTHS",
+  YTD: "YTD",
+  ONE_YEAR: "ONE_YEAR",
+  FIVE_YEARS: "FIVE_YEARS",
+  ALL: "ALL",
+} as const;
+
+export type ChartInterval = (typeof ChartInterval)[keyof typeof ChartInterval];
+
+export const ChartInterval = {
+  ONE_MINUTE: "ONE_MINUTE",
+  TEN_MINUTES: "TEN_MINUTES",
+  ONE_DAY: "ONE_DAY",
+  ONE_WEEK: "ONE_WEEK",
+} as const;
+
+export interface ChartPointDto {
+  timestamp: string;
+  price: number;
+}
+
+export interface PriceHistoryChartResponseDto {
+  symbol?: string;
+  currency?: string;
+  period?: ChartPeriod;
+  interval?: ChartInterval;
+  points?: ChartPointDto[];
+}
+
 export type SearchInstrumentsParams = {
   query: string;
   limit?: number;
+};
+
+export type GetPriceChartForInstrumentParams = {
+  period?: ChartPeriod;
 };
