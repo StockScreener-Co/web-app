@@ -1,5 +1,5 @@
 import { useParams, Link, useLocation } from "wouter";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { useToast } from "@/hooks/use-toast";
@@ -9,102 +9,17 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { customFetch, useCreateTransaction } from "@/lib/api-client";
+import {
+  useCreateTransaction,
+  useSearchInstruments,
+  useGetInstrumentById,
+  useGetNewsForInstrument,
+  useGetPriceChartForInstrument,
+  useGetInstrumentProfile,
+  ChartPeriod,
+} from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { OperationType, CompanyProfileDto } from "@/lib/api-client";
-
-export interface TickerData {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  marketCap: string;
-  peRatio: number;
-  week52High: number;
-  week52Low: number;
-  about: string;
-}
-
-interface MetricCard {
-  year?: number;
-  value: number;
-  ratio: number;
-  trend: "UP" | "DOWN" | "FLAT";
-}
-
-enum ChartPeriod {
-  ONE_DAY = "ONE_DAY",
-  FIVE_DAYS = "FIVE_DAYS",
-  ONE_MONTH = "ONE_MONTH",
-  YTD = "YTD",
-  THREE_MONTHS = "THREE_MONTHS",
-  SIX_MONTHS = "SIX_MONTHS",
-  ONE_YEAR = "ONE_YEAR",
-  FIVE_YEARS = "FIVE_YEARS",
-  ALL = "ALL"
-}
-
-enum ChartInterval {
-  ONE_MINUTE = "ONE_MINUTE",
-  TEN_MINUTES = "TEN_MINUTES",
-  ONE_DAY = "ONE_DAY",
-  ONE_WEEK = "ONE_WEEK"
-}
-
-interface ChartPointDto {
-  timestamp: string;
-  price: number;
-}
-
-interface PriceHistoryChartResponse {
-  symbol: string;
-  currency: string;
-  period: ChartPeriod;
-  interval: ChartInterval;
-  points: ChartPointDto[];
-}
-
-interface CurrentPriceResponseDto {
-  symbol: string;
-  price: number;
-  currency: string;
-  todayChange: MetricCard;
-}
-
-interface TickerPageView {
-  instrumentId: string;
-  companyName?: string;
-  currPrice?: CurrentPriceResponseDto;
-  profile?: {
-    name?: string;
-    founded?: string;
-    sector?: string;
-    industry?: string;
-    employeesNumber?: string;
-    ceoFullName?: string;
-    details?: { description?: string };
-  };
-  keyStats?: {
-    marketCap?: number;
-    peRatio?: number;
-    peTtmRatio?: number;
-    epsTtm?: number;
-    high52W?: number;
-    low52W?: number;
-    High52W?: number;
-    Low52W?: number;
-  };
-}
-
-interface NewsDto {
-  id: string;
-  datetime: string;
-  headline: string;
-  source: string;
-  url: string;
-  image: string;
-}
+import type { OperationType } from "@/lib/api-client";
 
 // Safe number formatter — никогда не крашится
 function safeFixed(value: number | undefined | null, digits = 2): string {
@@ -125,121 +40,67 @@ export default function TickerDetail() {
   const [avgPrice, setAvgPrice] = useState("");
   const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationType, setOperationType] = useState<OperationType>("BUY");
-
-  const [tickerApiData, setTickerApiData] = useState<TickerPageView | null>(null);
-  const [priceData, setPriceData] = useState<CurrentPriceResponseDto | null>(null);
-  const [news, setNews] = useState<NewsDto[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isNewsLoading, setIsNewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'profile'>('overview');
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfileDto | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
-  const [profileFetched, setProfileFetched] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>(ChartPeriod.ONE_MONTH);
-  const [chartHistory, setChartHistory] = useState<PriceHistoryChartResponse | null>(null);
-  const [isChartLoading, setIsChartLoading] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(ChartPeriod.ONE_MONTH);
 
   const createTransaction = useCreateTransaction();
 
-  useEffect(() => {
-    const isUuid = idOrSymbol?.includes("-");
+  const isUuid = !!idOrSymbol && idOrSymbol.includes("-");
 
-    const fetchData = (id: string) => {
-      setIsLoading(true);
+  const { data: searchResults, isLoading: isSearchLoading } = useSearchInstruments(
+    { query: idOrSymbol ?? "", limit: 1 },
+    { query: { enabled: !!idOrSymbol && !isUuid, queryKey: ["/api/v1/instruments/search", idOrSymbol] } }
+  );
 
-      customFetch<TickerPageView>(`/api/v1/instruments/${id}`)
-        .then(data => {
-          setTickerApiData(data);
-          if (data.currPrice) {
-            setPriceData(data.currPrice);
-          }
-          setIsLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch ticker details:", err);
-          setIsLoading(false);
-        });
+  const instrumentId: string | undefined = isUuid
+    ? idOrSymbol
+    : searchResults?.find(
+        (r) => r.symbol.toUpperCase() === idOrSymbol?.toUpperCase()
+      )?.id;
 
-      setIsNewsLoading(true);
-      customFetch<NewsDto[]>(`/api/v1/news/instrument/${id}`)
-        .then(data => {
-          // Защита: news всегда должен быть массивом
-          setNews(Array.isArray(data) ? data : []);
-          setIsNewsLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch news:", err);
-          // При ошибке (401, 403, 500) — просто пустой список, не крашимся
-          setNews([]);
-          setIsNewsLoading(false);
-        });
-    };
+  const { data: instrumentData, isLoading: isInstrumentLoading } = useGetInstrumentById(
+    instrumentId ?? "",
+    { query: { enabled: !!instrumentId, queryKey: ["/api/v1/instruments", instrumentId] } }
+  );
 
-    if (idOrSymbol) {
-      if (isUuid) {
-        fetchData(idOrSymbol);
-      } else {
-        setIsLoading(true);
-        customFetch<any[]>(`/api/v1/instruments/search?query=${idOrSymbol}&limit=1`)
-          .then(results => {
-            if (results && results.length > 0 && results[0].symbol.toUpperCase() === idOrSymbol.toUpperCase()) {
-              fetchData(results[0].id);
-            } else {
-              console.error(`Instrument with symbol ${idOrSymbol} not found`);
-              setIsLoading(false);
-            }
-          })
-          .catch(err => {
-            console.error("Failed to search instrument by symbol:", err);
-            setIsLoading(false);
-          });
-      }
-    }
-  }, [idOrSymbol]);
+  const { data: newsData, isLoading: isNewsLoading } = useGetNewsForInstrument(
+    instrumentId ?? "",
+    { query: { enabled: !!instrumentId, queryKey: ["/api/v1/news/instrument", instrumentId] } }
+  );
 
-  useEffect(() => {
-    const effectiveId = tickerApiData?.instrumentId;
+  const { data: chartHistory, isLoading: isChartLoading } = useGetPriceChartForInstrument(
+    instrumentId ?? "",
+    { period: selectedPeriod as any },
+    { query: { enabled: !!instrumentId, queryKey: ["/api/v1/prices/price-chart/instrument", instrumentId, selectedPeriod] } }
+  );
 
-    if (effectiveId) {
-      setIsChartLoading(true);
-      customFetch<PriceHistoryChartResponse>(`/api/v1/prices/price-chart/instrument/${effectiveId}?period=${selectedPeriod}`)
-        .then(data => {
-          setChartHistory(data);
-          setIsChartLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch chart history:", err);
-          setIsChartLoading(false);
-        });
-    } else {
-      setChartHistory(null);
-    }
-  }, [tickerApiData?.instrumentId, selectedPeriod]);
+  const { data: companyProfile, isLoading: isProfileLoading } = useGetInstrumentProfile(
+    instrumentId ?? "",
+    { query: { enabled: !!instrumentId && activeTab === "profile", queryKey: ["/api/v1/instruments", instrumentId, "profile"] } }
+  );
+
+  const isLoading = isInstrumentLoading || (isSearchLoading && !isUuid);
+  const news = newsData ?? [];
 
   const ticker = useMemo(() => {
-    if (tickerApiData) {
-      const profile = tickerApiData.profile ?? {};
-      const keyStats = tickerApiData.keyStats ?? {};
-      const details = profile.details ?? {};
-      const currPrice = tickerApiData.currPrice || priceData;
-
-      return {
-        symbol: currPrice?.symbol ?? profile.name?.split(' ')[0].toUpperCase() ?? idOrSymbol?.toUpperCase() ?? "UNKNOWN",
-        name: tickerApiData.companyName ?? profile.name ?? "Unknown Company",
-        price: currPrice?.price ?? 0,
-        change: currPrice?.todayChange?.value ?? 0,
-        changePercent: currPrice?.todayChange?.ratio ?? 0,
-        currency: currPrice?.currency ?? "USD",
-        about: details.description ?? "",
-        marketCap: keyStats.marketCap?.toLocaleString() ?? "N/A",
-        peRatio: keyStats.peTtmRatio ?? keyStats.peRatio ?? null,
-        epsTtm: keyStats.epsTtm ?? null,
-        week52High: keyStats.high52W ?? keyStats.High52W ?? null,
-        week52Low: keyStats.low52W ?? keyStats.Low52W ?? null,
-      };
-    }
-    return null;
-  }, [tickerApiData, priceData, idOrSymbol]);
+    if (!instrumentData) return null;
+    const keyStats = instrumentData.keyStats ?? {};
+    const currPrice = instrumentData.currPrice;
+    return {
+      symbol: currPrice?.symbol ?? idOrSymbol?.toUpperCase() ?? "UNKNOWN",
+      name: instrumentData.companyName ?? "Unknown Company",
+      price: currPrice?.price ?? 0,
+      change: currPrice?.todayChange?.value ?? 0,
+      changePercent: currPrice?.todayChange?.ratio ?? 0,
+      currency: currPrice?.currency ?? "USD",
+      about: instrumentData.profile?.details?.description ?? "",
+      marketCap: keyStats.marketCap?.toLocaleString() ?? "N/A",
+      peRatio: keyStats.peTtmRatio ?? keyStats.peRatio ?? null,
+      epsTtm: keyStats.epsTtm ?? null,
+      week52High: keyStats.high52W ?? null,
+      week52Low: keyStats.low52W ?? null,
+    };
+  }, [instrumentData, idOrSymbol]);
 
   const chartData = useMemo(() => {
     if (chartHistory?.points) {
@@ -319,7 +180,7 @@ export default function TickerDetail() {
       await createTransaction.mutateAsync({
         portfolioId: lastPortfolioId,
         data: {
-          instrumentId: tickerApiData?.instrumentId || idOrSymbol!,
+          instrumentId: instrumentId ?? idOrSymbol!,
           quantity: numShares,
           price: numPrice,
           tradeDate,
@@ -353,25 +214,9 @@ export default function TickerDetail() {
     setIsDialogOpen(true);
   };
 
-  const isMarketDataReal = tickerApiData && ticker.price > 0;
+  const isMarketDataReal = instrumentData && ticker.price > 0;
 
-  const handleProfileTabClick = () => {
-    setActiveTab('profile');
-    const instrumentId = tickerApiData?.instrumentId;
-    if (!instrumentId || profileFetched) return;
-    setIsProfileLoading(true);
-    customFetch<CompanyProfileDto>(`/api/v1/instruments/${instrumentId}/profile`)
-      .then(data => {
-        setCompanyProfile(data);
-        setProfileFetched(true);
-        setIsProfileLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch company profile:", err);
-        setProfileFetched(true);
-        setIsProfileLoading(false);
-      });
-  };
+  const handleProfileTabClick = () => setActiveTab('profile');
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8">
@@ -572,7 +417,7 @@ export default function TickerDetail() {
                               {item.source}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(item.datetime).toLocaleDateString()}
+                              {item.datetime ? new Date(item.datetime).toLocaleDateString() : ""}
                             </span>
                           </div>
                           <h4 className="font-bold text-lg leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
