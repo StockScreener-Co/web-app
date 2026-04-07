@@ -99,6 +99,11 @@ export default function TickerDetail() {
       epsTtm: keyStats.epsTtm ?? null,
       week52High: keyStats.high52W ?? null,
       week52Low: keyStats.low52W ?? null,
+      volume: keyStats.volume ?? null,
+      dividendYield: keyStats.dividendYield ?? null,
+      beta: keyStats.beta ?? null,
+      revenueTtm: keyStats.revenueTtm ?? null,
+      netIncomeTtm: keyStats.netIncomeTtm ?? null,
     };
   }, [instrumentData, idOrSymbol]);
 
@@ -374,10 +379,14 @@ export default function TickerDetail() {
                   <div className="space-y-4">
                     <StatRow label="Market Cap" value={ticker.marketCap} icon={DollarSign} />
                     <StatRow label="P/E Ratio" value={ticker.peRatio != null ? safeFixed(ticker.peRatio) : "N/A"} />
-                    {/* БЫЛО: tickerApiData.keyStats.epsTtm.toFixed(2) — крашилось если null */}
                     <StatRow label="EPS (TTM)" value={ticker.epsTtm != null ? `$${safeFixed(ticker.epsTtm)}` : "N/A"} />
                     <StatRow label="52W High" value={ticker.week52High != null ? `$${safeFixed(ticker.week52High)}` : "N/A"} />
                     <StatRow label="52W Low" value={ticker.week52Low != null ? `$${safeFixed(ticker.week52Low)}` : "N/A"} />
+                    <StatRow label="Volume" value={ticker.volume != null ? ticker.volume.toLocaleString() : "N/A"} />
+                    <StatRow label="Dividend Yield" value={ticker.dividendYield != null ? `${safeFixed(ticker.dividendYield)}%` : "N/A"} />
+                    <StatRow label="Beta" value={ticker.beta != null ? safeFixed(ticker.beta) : "N/A"} />
+                    <StatRow label="Revenue (TTM)" value={ticker.revenueTtm != null ? `$${(ticker.revenueTtm / 1e9).toFixed(2)}B` : "N/A"} />
+                    <StatRow label="Net Income (TTM)" value={ticker.netIncomeTtm != null ? `$${(ticker.netIncomeTtm / 1e9).toFixed(2)}B` : "N/A"} />
                   </div>
                 </div>
               </div>
