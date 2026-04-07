@@ -3,10 +3,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { Link, useSearch, useLocation } from "wouter";
 import {
-  Briefcase, Search, Plus, X, Calendar, DollarSign, Layers
+  Briefcase, Search, Plus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGetPortfolioById, useCreateTransaction, useSearchInstruments } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { OperationType } from "@/lib/api-client";
@@ -157,157 +161,149 @@ export default function Portfolio() {
         </Button>
       </div>
 
-      {/* Add Position Modal */}
-      <AnimatePresence>
-        {showAdd && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-            onClick={() => setShowAdd(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.94, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.94, y: 20 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm p-6"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-display font-bold">Add Position</h2>
-                <button onClick={() => setShowAdd(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+      {/* Add Position Dialog */}
+      <Dialog open={showAdd} onOpenChange={(open) => {
+        setShowAdd(open);
+        if (!open) {
+          setForm({
+            instrumentId: "",
+            ticker: "",
+            quantity: "",
+            price: "",
+            tradeDate: new Date().toISOString().split("T")[0],
+            operationType: "BUY",
+          });
+          setSearchTerm("");
+          setFormError("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Position</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd} className="space-y-4 pt-2">
+            {/* Instrument search */}
+            <div className="relative">
+              <Label className="mb-1.5 block">Search Instrument</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value.toUpperCase());
+                    setShowResults(true);
+                  }}
+                  onFocus={() => setShowResults(true)}
+                  placeholder="e.g. AAPL"
+                  className="pl-10"
+                />
               </div>
-              <form onSubmit={handleAdd} className="space-y-4">
-                <div className="relative">
-                  <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Search Instrument</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      value={searchTerm}
-                      onChange={e => {
-                        setSearchTerm(e.target.value.toUpperCase());
-                        setShowResults(true);
-                      }}
-                      onFocus={() => setShowResults(true)}
-                      placeholder="e.g. AAPL"
-                      className="w-full bg-secondary border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    />
-                  </div>
-                  
-                  <AnimatePresence>
-                    {showResults && searchTerm.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-50 left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto"
+              {showResults && searchTerm.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                  {isSearching ? (
+                    <div className="p-4 text-sm text-center text-muted-foreground">Searching...</div>
+                  ) : searchResults && searchResults.length > 0 ? (
+                    searchResults.map((instr) => (
+                      <button
+                        key={instr.id}
+                        type="button"
+                        className="w-full text-left px-4 py-3 hover:bg-accent flex items-center justify-between transition-colors border-b border-border/50 last:border-0"
+                        onClick={() => {
+                          setForm((f) => ({ ...f, instrumentId: instr.id, ticker: instr.symbol }));
+                          setSearchTerm(instr.symbol);
+                          setShowResults(false);
+                        }}
                       >
-                        {isSearching ? (
-                          <div className="p-4 text-sm text-center text-muted-foreground">Searching...</div>
-                        ) : searchResults && searchResults.length > 0 ? (
-                          searchResults.map(instr => (
-                            <button
-                              key={instr.id}
-                              type="button"
-                              className="w-full text-left px-4 py-3 hover:bg-accent flex items-center justify-between transition-colors border-b border-border/50 last:border-0"
-                              onClick={() => {
-                                setForm(f => ({ ...f, instrumentId: instr.id, ticker: instr.symbol }));
-                                setSearchTerm(instr.symbol);
-                                setShowResults(false);
-                              }}
-                            >
-                              <div>
-                                <div className="font-bold text-sm">{instr.symbol}</div>
-                                <div className="text-xs text-muted-foreground">{instr.name}</div>
-                              </div>
-                              <div className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-medium">{instr.currency}</div>
-                            </button>
-                          ))
-                        ) : searchTerm.length > 1 ? (
-                          <div className="p-4 text-sm text-center text-muted-foreground">No instruments found</div>
-                        ) : null}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <div>
+                          <div className="font-bold text-sm">{instr.symbol}</div>
+                          <div className="text-xs text-muted-foreground">{instr.name}</div>
+                        </div>
+                        <div className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-medium">
+                          {instr.currency}
+                        </div>
+                      </button>
+                    ))
+                  ) : searchTerm.length > 1 ? (
+                    <div className="p-4 text-sm text-center text-muted-foreground">No instruments found</div>
+                  ) : null}
                 </div>
+              )}
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Operation</label>
-                    <select
-                      value={form.operationType}
-                      onChange={e => setForm(f => ({ ...f, operationType: e.target.value as OperationType }))}
-                      className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none"
-                    >
-                      <option value="BUY">Buy</option>
-                      <option value="SELL">Sell</option>
-                      <option value="DIVIDEND">Dividend</option>
-                      <option value="DEPOSIT">Deposit</option>
-                      <option value="WITHDRAWAL">Withdrawal</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Date</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <input
-                        type="date"
-                        value={form.tradeDate}
-                        onChange={e => setForm(f => ({ ...f, tradeDate: e.target.value }))}
-                        className="w-full bg-secondary border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* Operation + Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-1.5 block">Operation</Label>
+                <Select
+                  value={form.operationType}
+                  onValueChange={(v) => setForm((f) => ({ ...f, operationType: v as OperationType }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BUY">Buy</SelectItem>
+                    <SelectItem value="SELL">Sell</SelectItem>
+                    <SelectItem value="DIVIDEND">Dividend</SelectItem>
+                    <SelectItem value="DEPOSIT">Deposit</SelectItem>
+                    <SelectItem value="WITHDRAWAL">Withdrawal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-1.5 block">Date</Label>
+                <Input
+                  type="date"
+                  value={form.tradeDate}
+                  onChange={(e) => setForm((f) => ({ ...f, tradeDate: e.target.value }))}
+                />
+              </div>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Quantity</label>
-                    <div className="relative">
-                      <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <input
-                        type="number"
-                        value={form.quantity}
-                        onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-                        placeholder="0.00"
-                        min="0"
-                        step="any"
-                        className="w-full bg-secondary border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Price ($)</label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <input
-                        type="number"
-                        value={form.price}
-                        onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                        placeholder="0.00"
-                        min="0"
-                        step="any"
-                        className="w-full bg-secondary border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* Quantity + Price */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-1.5 block">Quantity</Label>
+                <Input
+                  type="number"
+                  value={form.quantity}
+                  onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+                  placeholder="0.00"
+                  min="0"
+                  step="any"
+                />
+              </div>
+              <div>
+                <Label className="mb-1.5 block">Price ($)</Label>
+                <Input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                  placeholder="0.00"
+                  min="0"
+                  step="any"
+                />
+              </div>
+            </div>
 
-                {formError && (
-                  <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2.5">{formError}</p>
-                )}
-                <Button type="submit" className="w-full rounded-xl mt-2 py-6 text-base font-bold shadow-lg shadow-primary/20" disabled={createTransaction.isPending}>
-                  {createTransaction.isPending ? "Adding..." : "Add Transaction"}
-                </Button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {formError && (
+              <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2.5">
+                {formError}
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="submit"
+                className="w-full font-bold shadow-lg shadow-primary/20"
+                disabled={createTransaction.isPending}
+              >
+                {createTransaction.isPending ? "Adding..." : "Add Transaction"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {assets.length === 0 ? (
         /* Empty State */
