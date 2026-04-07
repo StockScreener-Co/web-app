@@ -11,6 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Columns3 } from "lucide-react";
+import { usePortfolioColumns, type ColumnId } from "@/hooks/use-portfolio-columns";
 import { useGetPortfolioById, useCreateTransaction, useSearchInstruments } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { OperationType } from "@/lib/api-client";
@@ -62,6 +66,7 @@ export default function Portfolio() {
   });
 
   const createTransaction = useCreateTransaction();
+  const { visibleColumns, toggleColumn, allColumns } = usePortfolioColumns();
 
   const portfolioName = portfolio?.name || "Portfolio";
 
@@ -392,80 +397,148 @@ export default function Portfolio() {
 
           {/* Holdings Table */}
           <div>
-            <h2 className="text-2xl font-display font-bold mb-5">Holdings</h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-2xl font-display font-bold">Holdings</h2>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Columns3 className="w-4 h-4" />
+                    Columns
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                    Toggle Columns
+                  </p>
+                  <div className="space-y-2">
+                    {allColumns.map((col) => (
+                      <div key={col.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`col-${col.id}`}
+                          checked={visibleColumns.includes(col.id as ColumnId)}
+                          disabled={col.locked}
+                          onCheckedChange={() => toggleColumn(col.id as ColumnId)}
+                        />
+                        <label
+                          htmlFor={`col-${col.id}`}
+                          className={`text-sm ${col.locked ? "text-muted-foreground" : "cursor-pointer"}`}
+                        >
+                          {col.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
             <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
                       <th className="p-4 pl-6 font-semibold">Asset</th>
-                      <th className="p-4 font-semibold text-right">Current Price</th>
-                      <th className="p-4 font-semibold text-right">Holdings</th>
-                      <th className="p-4 font-semibold text-right">Value</th>
-                      <th className="p-4 font-semibold text-right">Return</th>
-                      {/* <th className="p-4 pr-6 font-semibold text-center w-16"></th> */}
+                      {visibleColumns.includes("currentPrice") && <th className="p-4 font-semibold text-right">Current Price</th>}
+                      {visibleColumns.includes("qty") && <th className="p-4 font-semibold text-right">Qty</th>}
+                      {visibleColumns.includes("avgPrice") && <th className="p-4 font-semibold text-right">Avg Price</th>}
+                      {visibleColumns.includes("value") && <th className="p-4 font-semibold text-right">Value</th>}
+                      {visibleColumns.includes("todayPL") && <th className="p-4 font-semibold text-right">Today P&L $</th>}
+                      {visibleColumns.includes("todayPLPct") && <th className="p-4 font-semibold text-right">Today P&L %</th>}
+                      {visibleColumns.includes("totalPL") && <th className="p-4 font-semibold text-right">Total P&L $</th>}
+                      {visibleColumns.includes("totalPLPct") && <th className="p-4 font-semibold text-right">Total P&L %</th>}
+                      {visibleColumns.includes("weight") && <th className="p-4 font-semibold text-right">Weight %</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
                     <AnimatePresence>
-                      {assets.map((asset, i) => {
-                        const isPosToday = asset.todayChange?.trend === 'UP';
-                        const isPosTotal = asset.unrealizedPL?.trend === 'UP';
-                        return (
-                          <motion.tr
-                            key={asset.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ delay: i * 0.04 }}
-                            className="hover:bg-accent/20 transition-colors group"
-                          >
-                            <td className="p-4 pl-6">
-                              <Link href={`/ticker/${asset.instrumentId}`} className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                  {asset.symbol.slice(0, 2)}
-                                </div>
-                                <div>
-                                  <div className="font-bold hover:text-primary transition-colors">{asset.symbol}</div>
-                                  <div className="text-xs text-muted-foreground">{asset.name}</div>
-                                </div>
-                              </Link>
-                            </td>
+                      {assets.map((asset, i) => (
+                        <motion.tr
+                          key={asset.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="hover:bg-accent/20 transition-colors group"
+                        >
+                          {/* Asset — always visible, locked */}
+                          <td className="p-4 pl-6">
+                            <Link href={`/ticker/${asset.instrumentId}`} className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                {asset.symbol.slice(0, 2)}
+                              </div>
+                              <div>
+                                <div className="font-bold hover:text-primary transition-colors">{asset.symbol}</div>
+                                <div className="text-xs text-muted-foreground">{asset.name}</div>
+                              </div>
+                            </Link>
+                          </td>
+
+                          {visibleColumns.includes("currentPrice") && (
                             <td className="p-4 text-right">
                               <div className="font-semibold">{fmt(asset.currentPrice)}</div>
-                              <div className={`text-xs ${isPosToday ? "text-green-400" : asset.todayChange?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                              <div className={`text-xs ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
                                 {asset.todayChange?.ratio?.toFixed(2) ?? "0.00"}% 1D
                               </div>
                             </td>
+                          )}
+
+                          {visibleColumns.includes("qty") && (
                             <td className="p-4 text-right">
                               <div className="font-semibold">{asset.qty.toFixed(4)}</div>
-                              <div className="text-xs text-muted-foreground">Avg {fmt(asset.avgPrice)}</div>
                             </td>
+                          )}
+
+                          {visibleColumns.includes("avgPrice") && (
+                            <td className="p-4 text-right">
+                              <div className="font-semibold">{fmt(asset.avgPrice)}</div>
+                            </td>
+                          )}
+
+                          {visibleColumns.includes("value") && (
                             <td className="p-4 text-right">
                               <div className="font-semibold">{fmt(asset.value)}</div>
                               <div className="text-xs text-muted-foreground">{(asset.weight * 100).toFixed(1)}% of portfolio</div>
                             </td>
+                          )}
+
+                          {visibleColumns.includes("todayPL") && (
                             <td className="p-4 text-right">
-                              <div className={`font-semibold ${isPosTotal ? "text-green-400" : asset.unrealizedPL?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                              <div className={`font-semibold ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
+                                {fmt(asset.todayChange?.value ?? 0)}
+                              </div>
+                            </td>
+                          )}
+
+                          {visibleColumns.includes("todayPLPct") && (
+                            <td className="p-4 text-right">
+                              <div className={`font-semibold ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
+                                {fmtPct(asset.todayChange?.ratio ?? 0)}
+                              </div>
+                            </td>
+                          )}
+
+                          {visibleColumns.includes("totalPL") && (
+                            <td className="p-4 text-right">
+                              <div className={`font-semibold ${asset.unrealizedPL?.trend === "UP" ? "text-green-400" : asset.unrealizedPL?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
                                 {fmt(asset.unrealizedPL?.value ?? 0)}
                               </div>
-                              <div className={`text-xs ${isPosTotal ? "text-green-400" : asset.unrealizedPL?.trend === 'DOWN' ? "text-destructive" : "text-muted-foreground"}`}>
+                            </td>
+                          )}
+
+                          {visibleColumns.includes("totalPLPct") && (
+                            <td className="p-4 text-right">
+                              <div className={`font-semibold ${asset.unrealizedPL?.trend === "UP" ? "text-green-400" : asset.unrealizedPL?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
                                 {fmtPct(asset.unrealizedPL?.ratio ?? 0)}
                               </div>
                             </td>
-                            {/* <td className="p-4 pr-6 text-center">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                                onClick={() => {}}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </td> */}
-                          </motion.tr>
-                        );
-                      })}
+                          )}
+
+                          {visibleColumns.includes("weight") && (
+                            <td className="p-4 text-right">
+                              <div className="font-semibold">{(asset.weight * 100).toFixed(1)}%</div>
+                            </td>
+                          )}
+                        </motion.tr>
+                      ))}
                     </AnimatePresence>
                   </tbody>
                 </table>
