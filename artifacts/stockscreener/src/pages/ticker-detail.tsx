@@ -465,6 +465,7 @@ export default function TickerDetail() {
                 </div>
               ) : (
                 <div className="space-y-8">
+                  {/* 1. About — full width, at top */}
                   {companyProfile.description && (
                     <div>
                       <h4 className="font-bold text-lg mb-3">About</h4>
@@ -472,28 +473,23 @@ export default function TickerDetail() {
                     </div>
                   )}
 
+                  {/* 2. Company card — consolidated business + leadership */}
+                  <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                    <h4 className="font-bold flex items-center gap-2">
+                      <BriefcaseBusiness className="w-4 h-4 text-primary" /> Company
+                    </h4>
+                    {companyProfile.sector && <ProfileRow label="Sector" value={companyProfile.sector} />}
+                    {companyProfile.industry && <ProfileRow label="Industry" value={companyProfile.industry} />}
+                    {companyProfile.type && <ProfileRow label="Type" value={companyProfile.type} />}
+                    {companyProfile.exchange && <ProfileRow label="Exchange" value={companyProfile.exchange} />}
+                    {companyProfile.ceo && <ProfileRow label="CEO" value={companyProfile.ceo} />}
+                    {companyProfile.employees != null && companyProfile.employees > 0 && (
+                      <ProfileRow label="Employees" value={companyProfile.employees.toLocaleString()} />
+                    )}
+                  </div>
+
+                  {/* 3. Location + Contact grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
-                      <h4 className="font-bold flex items-center gap-2">
-                        <BriefcaseBusiness className="w-4 h-4 text-primary" /> Business
-                      </h4>
-                      {companyProfile.sector && <ProfileRow label="Sector" value={companyProfile.sector} />}
-                      {companyProfile.industry && <ProfileRow label="Industry" value={companyProfile.industry} />}
-                      {companyProfile.type && <ProfileRow label="Type" value={companyProfile.type} />}
-                      {companyProfile.exchange && <ProfileRow label="Exchange" value={companyProfile.exchange} />}
-                      {companyProfile.micCode && <ProfileRow label="MIC Code" value={companyProfile.micCode} />}
-                    </div>
-
-                    <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
-                      <h4 className="font-bold flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" /> Leadership
-                      </h4>
-                      {companyProfile.ceo && <ProfileRow label="CEO" value={companyProfile.ceo} />}
-                      {companyProfile.employees != null && companyProfile.employees > 0 && (
-                        <ProfileRow label="Employees" value={companyProfile.employees.toLocaleString()} />
-                      )}
-                    </div>
-
                     <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
                       <h4 className="font-bold flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-primary" /> Location
