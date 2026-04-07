@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -279,15 +280,22 @@ export default function TickerDetail() {
                 <Plus className="w-5 h-5 mr-2" />
                 Add to Portfolio
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="font-semibold border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
-                onClick={() => toast({ title: "Coming Soon", description: "Watchlist feature is under development." })}
-              >
-                <BookmarkPlus className="w-5 h-5 mr-2" />
-                Add to Watchlist
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      disabled
+                      className="font-semibold border-primary/20 opacity-50 cursor-not-allowed pointer-events-none"
+                    >
+                      <BookmarkPlus className="w-5 h-5 mr-2" />
+                      Add to Watchlist
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Coming soon — watchlist is planned</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
