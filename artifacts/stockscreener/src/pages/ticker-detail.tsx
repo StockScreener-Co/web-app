@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AddToWatchlistDialog } from "@/components/add-to-watchlist-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -42,6 +42,7 @@ export default function TickerDetail() {
   const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationType, setOperationType] = useState<OperationType>("BUY");
   const [activeTab, setActiveTab] = useState<'overview' | 'profile'>('overview');
+  const [isWatchlistDialogOpen, setIsWatchlistDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string>(ChartPeriod.ONE_MONTH);
 
   const createTransaction = useCreateTransaction();
@@ -280,22 +281,16 @@ export default function TickerDetail() {
                 <Plus className="w-5 h-5 mr-2" />
                 Add to Portfolio
               </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      disabled
-                      className="font-semibold border-primary/20 opacity-50 cursor-not-allowed pointer-events-none"
-                    >
-                      <BookmarkPlus className="w-5 h-5 mr-2" />
-                      Add to Watchlist
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Coming soon — watchlist is planned</TooltipContent>
-              </Tooltip>
+              <Button
+                variant="outline"
+                size="lg"
+                className="font-semibold border-primary/20"
+                onClick={() => setIsWatchlistDialogOpen(true)}
+                disabled={!user || !instrumentId}
+              >
+                <BookmarkPlus className="w-5 h-5 mr-2" />
+                Add to Watchlist
+              </Button>
             </div>
           </div>
 
@@ -611,6 +606,15 @@ export default function TickerDetail() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {instrumentId && ticker && (
+        <AddToWatchlistDialog
+          open={isWatchlistDialogOpen}
+          onOpenChange={setIsWatchlistDialogOpen}
+          instrumentId={instrumentId}
+          symbol={ticker.symbol}
+        />
+      )}
     </div>
   );
 }
