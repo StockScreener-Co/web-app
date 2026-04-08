@@ -2,8 +2,9 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useTheme } from "./theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
+import { useLastWatchlist } from "@/hooks/use-last-watchlist";
 import { useGetMyPortfolios } from "@workspace/api-client-react";
-import { Moon, Sun, Search, Briefcase, Menu, X, User, LogOut, ChevronDown } from "lucide-react";
+import { Moon, Sun, Search, Briefcase, Menu, X, User, LogOut, ChevronDown, Bookmark } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -87,6 +88,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const { lastPortfolioId } = useLastPortfolio();
+  const { lastWatchlistId } = useLastWatchlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleTheme = () => {
@@ -95,10 +97,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/", label: "Search", icon: Search },
-    { 
-      href: user && lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolios", 
-      label: "Portfolios", 
-      icon: Briefcase 
+    {
+      href: user && lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolios",
+      label: "Portfolios",
+      icon: Briefcase
+    },
+    {
+      href: user && lastWatchlistId ? `/watchlist?id=${lastWatchlistId}` : "/watchlists",
+      label: "Watchlist",
+      icon: Bookmark,
     },
   ];
 
