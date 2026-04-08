@@ -214,6 +214,48 @@ export interface PriceHistoryChartResponseDto {
   points?: ChartPointDto[];
 }
 
+export interface WatchlistDto {
+  id: string;
+  name: string;
+  marginOfSafety: number;
+  itemCount: number;
+}
+
+export interface WatchlistRequestDto {
+  /** @maxLength 100 */
+  name: string;
+}
+
+export interface WatchlistUpdateDto {
+  /** @maxLength 100 */
+  name?: string;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  marginOfSafety?: number;
+}
+
+export interface WatchlistItemDto {
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  todayChange: MetricCard;
+  intrinsicValue?: number | null;
+}
+
+export interface WatchlistDetailsDto {
+  id: string;
+  name: string;
+  marginOfSafety: number;
+  items: WatchlistItemDto[];
+}
+
+export interface WatchlistItemUpdateDto {
+  intrinsicValue?: number | null;
+}
+
 export type SearchInstrumentsParams = {
   query: string;
   limit?: number;

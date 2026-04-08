@@ -308,6 +308,169 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PriceHistoryChartResponseDto"
+  /v1/watchlists:
+    get:
+      operationId: getWatchlists
+      tags: [watchlists]
+      summary: List all watchlists for current user
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WatchlistDto"
+    post:
+      operationId: createWatchlist
+      tags: [watchlists]
+      summary: Create a watchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistRequestDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistDto"
+  /v1/watchlists/{id}:
+    get:
+      operationId: getWatchlistById
+      tags: [watchlists]
+      summary: Get watchlist detail with items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistDetailsDto"
+    patch:
+      operationId: updateWatchlist
+      tags: [watchlists]
+      summary: Update watchlist name or margin of safety
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistUpdateDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistDto"
+    delete:
+      operationId: deleteWatchlist
+      tags: [watchlists]
+      summary: Delete a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No content
+  /v1/watchlists/{id}/instruments/{instrumentId}:
+    post:
+      operationId: addInstrumentToWatchlist
+      tags: [watchlists]
+      summary: Add an instrument to a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistItemDto"
+    patch:
+      operationId: updateWatchlistItem
+      tags: [watchlists]
+      summary: Update intrinsic value for a watchlist item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistItemUpdateDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistItemDto"
+    delete:
+      operationId: removeInstrumentFromWatchlist
+      tags: [watchlists]
+      summary: Remove an instrument from a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No content
 components:
   schemas:
     OperationType:
@@ -663,4 +826,72 @@ components:
       required:
         - timestamp
         - price
-
+    WatchlistDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        marginOfSafety:
+          type: number
+        itemCount:
+          type: integer
+      required: [id, name, marginOfSafety, itemCount]
+    WatchlistRequestDto:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+      required: [name]
+    WatchlistUpdateDto:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        marginOfSafety:
+          type: number
+          minimum: 0
+          maximum: 100
+    WatchlistDetailsDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        marginOfSafety:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchlistItemDto"
+      required: [id, name, marginOfSafety, items]
+    WatchlistItemDto:
+      type: object
+      properties:
+        instrumentId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        name:
+          type: string
+        currentPrice:
+          type: number
+        todayChange:
+          $ref: "#/components/schemas/MetricCard"
+        intrinsicValue:
+          type: number
+          nullable: true
+      required: [instrumentId, symbol, name, currentPrice, todayChange]
+    WatchlistItemUpdateDto:
+      type: object
+      properties:
+        intrinsicValue:
+          type: number
+          nullable: true
