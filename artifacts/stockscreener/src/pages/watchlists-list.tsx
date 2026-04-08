@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export default function WatchlistsList() {
   const { user } = useAuth();
-  const { updateLastWatchlistId } = useLastWatchlist();
+  const { lastWatchlistId, updateLastWatchlistId } = useLastWatchlist();
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -47,7 +47,14 @@ export default function WatchlistsList() {
   });
 
   const handleDelete = (id: string) => {
-    deleteWatchlistMutation.mutate({ id });
+    deleteWatchlistMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          if (lastWatchlistId === id) updateLastWatchlistId(null);
+        },
+      }
+    );
   };
 
   if (!user) {

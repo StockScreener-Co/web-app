@@ -28,7 +28,7 @@ function computeSignal(
   intrinsicValue: number | null | undefined,
   marginOfSafety: number
 ): Signal {
-  if (intrinsicValue == null) return null;
+  if (intrinsicValue == null || intrinsicValue <= 0) return null;
   const threshold = intrinsicValue * (1 - marginOfSafety / 100);
   if (currentPrice <= threshold) return "BUY";
   if (currentPrice > intrinsicValue) return "SELL";
@@ -89,7 +89,7 @@ function IVCell({
 
   const commit = () => {
     const parsed = draft === "" ? null : parseFloat(draft);
-    if (parsed !== null && isNaN(parsed)) {
+    if (parsed !== null && (isNaN(parsed) || parsed < 0)) {
       setEditing(false);
       return;
     }
@@ -106,6 +106,7 @@ function IVCell({
         ref={inputRef}
         type="number"
         value={draft}
+        min={0}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -243,6 +244,7 @@ function AddTickerDialog({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", watchlistId] });
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
         onOpenChange(false);
         setSearchTerm("");
       },
@@ -340,6 +342,7 @@ export default function WatchlistPage() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", currentWatchlistId] });
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
       },
       onError: () => {
         toast.error("Failed to remove ticker");

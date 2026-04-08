@@ -91,6 +91,7 @@ export function AddToWatchlistDialog({
     } else {
       toast.error(`${failed.length} watchlist(s) failed — ticker may already be there`);
     }
+    queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
     setCheckedIds(new Set());
     onOpenChange(false);
   };
