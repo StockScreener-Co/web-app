@@ -13,6 +13,8 @@ import Portfolio from "@/pages/portfolio";
 import TickerDetail from "@/pages/ticker-detail";
 import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
+import WatchlistsList from "@/pages/watchlists-list";
+import WatchlistPage from "@/pages/watchlist";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +39,8 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/portfolios" component={PortfoliosList} />
         <Route path="/portfolio" component={Portfolio} />
+        <Route path="/watchlists" component={WatchlistsList} />
+        <Route path="/watchlist" component={WatchlistPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/ticker/:idOrSymbol" component={TickerDetail} />
         <Route component={NotFound} />
