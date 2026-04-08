@@ -3,11 +3,10 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastWatchlist } from "@/hooks/use-last-watchlist";
 import { Link, useSearch, useLocation } from "wouter";
-import { Bookmark, Plus, Search, Trash2, Loader2 } from "lucide-react";
+import { Bookmark, Plus, Search, Trash2, Loader2, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   useGetWatchlistById,
@@ -82,6 +81,12 @@ function IVCell({
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  useEffect(() => {
+    if (!editing) {
+      setDraft(item.intrinsicValue != null ? String(item.intrinsicValue) : "");
+    }
+  }, [item.intrinsicValue, editing]);
+
   const commit = () => {
     const parsed = draft === "" ? null : parseFloat(draft);
     if (parsed !== null && isNaN(parsed)) {
@@ -104,8 +109,11 @@ function IVCell({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") setEditing(false);
+          if (e.key === "Enter") inputRef.current?.blur();
+          if (e.key === "Escape") {
+            setDraft(item.intrinsicValue != null ? String(item.intrinsicValue) : "");
+            setEditing(false);
+          }
         }}
         className="w-28 h-7 text-sm"
         disabled={isPending}
@@ -143,6 +151,12 @@ function MoSEditor({
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  useEffect(() => {
+    if (!editing) {
+      setDraft(String(value));
+    }
+  }, [value, editing]);
+
   const { mutate: updateWatchlist, isPending } = useUpdateWatchlist({
     mutation: {
       onSuccess: () => {
@@ -177,7 +191,7 @@ function MoSEditor({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
+            if (e.key === "Enter") inputRef.current?.blur();
             if (e.key === "Escape") setEditing(false);
           }}
           className="w-20 h-7 text-sm"
@@ -196,7 +210,7 @@ function MoSEditor({
       }}
       className="text-sm font-semibold hover:text-primary transition-colors"
     >
-      {value}% ✏
+      {value}% <Pencil className="w-3 h-3 inline-block ml-1 opacity-50" />
     </button>
   );
 }
@@ -243,7 +257,7 @@ function AddTickerDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) setSearchTerm(""); onOpenChange(next); }}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Add Ticker</DialogTitle>
