@@ -245,15 +245,17 @@ export interface WatchlistItemDto {
   intrinsicValue?: number | null;
 }
 
+export interface WatchlistItemUpdateDto {
+  /** Set to a positive number to record intrinsic value. Set to null to clear it. Omitting the field is a no-op.
+   */
+  intrinsicValue?: number | null;
+}
+
 export interface WatchlistDetailsDto {
   id: string;
   name: string;
   marginOfSafety: number;
   items: WatchlistItemDto[];
-}
-
-export interface WatchlistItemUpdateDto {
-  intrinsicValue?: number | null;
 }
 
 export type SearchInstrumentsParams = {

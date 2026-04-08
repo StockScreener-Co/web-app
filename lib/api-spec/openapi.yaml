@@ -856,21 +856,6 @@ components:
           type: number
           minimum: 0
           maximum: 100
-    WatchlistDetailsDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        marginOfSafety:
-          type: number
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/WatchlistItemDto"
-      required: [id, name, marginOfSafety, items]
     WatchlistItemDto:
       type: object
       properties:
@@ -895,3 +880,21 @@ components:
         intrinsicValue:
           type: number
           nullable: true
+          description: >
+            Set to a positive number to record intrinsic value.
+            Set to null to clear it. Omitting the field is a no-op.
+    WatchlistDetailsDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        marginOfSafety:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchlistItemDto"
+      required: [id, name, marginOfSafety, items]
