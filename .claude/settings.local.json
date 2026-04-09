@@ -16,7 +16,13 @@
       "Bash(powershell -Command 'Get-Process | Where-Object { $_.MainWindowTitle -like '\\\\''*api*'\\\\'' -or $_.ProcessName -eq '\\\\''node'\\\\'' }')",
       "Bash(pnpm:*)",
       "Bash(claude mcp:*)",
-      "Bash(npx skills:*)"
+      "Bash(npx skills:*)",
+      "Bash(bash:*)",
+      "Bash(cat \"D:/Projects/SS/web-app/.superpowers/brainstorm/\"*/state/server-info)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git commit:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

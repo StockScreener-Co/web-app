@@ -2,7 +2,8 @@ import { useParams, Link, useLocation } from "wouter";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader2, BookmarkPlus, Building2, Users, MapPin, Newspaper, ExternalLink, Phone, Globe, Landmark, BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
@@ -34,8 +35,6 @@ export default function TickerDetail() {
   const { lastPortfolioId } = useLastPortfolio();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
@@ -45,7 +44,7 @@ export default function TickerDetail() {
   const [isWatchlistDialogOpen, setIsWatchlistDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string>(ChartPeriod.ONE_MONTH);
 
-  const createTransaction = useCreateTransaction();
+  const createTransaction = useCreateTransaction({ mutation: { meta: { suppressErrorToast: true } } });
 
   const isUuid = !!idOrSymbol && idOrSymbol.includes("-");
 
@@ -152,21 +151,13 @@ export default function TickerDetail() {
     e.preventDefault();
 
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to add positions to your portfolio.",
-        variant: "destructive"
-      });
+      toast.error("Please sign in to add positions to your portfolio.");
       setLocation("/auth");
       return;
     }
 
     if (!lastPortfolioId) {
-      toast({
-        title: "No portfolio selected",
-        description: "Please create a portfolio first.",
-        variant: "destructive"
-      });
+      toast.error("Please create a portfolio first.");
       setLocation("/portfolios");
       return;
     }
@@ -175,11 +166,7 @@ export default function TickerDetail() {
     const numPrice = parseFloat(avgPrice);
 
     if (isNaN(numShares) || numShares <= 0 || isNaN(numPrice) || numPrice < 0) {
-      toast({
-        title: "Invalid input",
-        description: "Please enter valid numbers for shares and price.",
-        variant: "destructive"
-      });
+      toast.error("Please enter valid numbers for shares and price.");
       return;
     }
 
@@ -203,16 +190,9 @@ export default function TickerDetail() {
       setTradeDate(new Date().toISOString().split('T')[0]);
       setOperationType("BUY");
 
-      toast({
-        title: "Position Added",
-        description: `Successfully added ${numShares} shares of ${ticker.symbol} to your portfolio.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message || "Failed to add position. Please try again.",
-        variant: "destructive"
-      });
+      toast.success(`Added ${numShares} shares of ${ticker.symbol} to your portfolio.`);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, "Failed to add position. Please try again."));
     }
   };
 

@@ -39,9 +39,6 @@ export default function PortfoliosList() {
         toast.success("Portfolio deleted successfully");
         queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user?.id] });
       },
-      onError: () => {
-        toast.error("Failed to delete portfolio");
-      },
     },
   });
 

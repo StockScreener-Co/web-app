@@ -40,9 +40,6 @@ export default function WatchlistsList() {
         toast.success("Watchlist deleted successfully");
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
       },
-      onError: () => {
-        toast.error("Failed to delete watchlist");
-      },
     },
   });
 

@@ -7,13 +7,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { LineChart, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { login, register, isLoading, user } = useAuth();
-  const { toast } = useToast();
-  
   // If user is already logged in, redirect to home
   if (user) {
     setLocation("/");
@@ -33,46 +31,28 @@ export default function AuthPage() {
     e.preventDefault();
     try {
       await login(loginEmail, loginPassword);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
+      toast.success("Welcome back!");
       setLocation("/");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sign in",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to sign in");
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (registerPassword !== registerRepeatPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
+      toast.error("Passwords do not match");
       return;
     }
     try {
       await register(registerEmail, registerPassword, registerRepeatPassword, registerFullName);
-      toast({
-        title: "Account created",
-        description: "You have successfully registered! Please log in.",
-      });
+      toast.success("Account created! Please log in.");
       // Switch to login tab after successful registration
       setActiveTab("login");
       // Pre-fill login email for convenience
       setLoginEmail(registerEmail);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to create account");
     }
   };
 

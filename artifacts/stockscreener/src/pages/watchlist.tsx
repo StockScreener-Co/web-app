@@ -71,7 +71,6 @@ function IVCell({
         setEditing(false);
       },
       onError: () => {
-        toast.error("Failed to update intrinsic value");
         setEditing(false);
       },
     },
@@ -165,7 +164,6 @@ function MoSEditor({
         setEditing(false);
       },
       onError: () => {
-        toast.error("Failed to update margin of safety");
         setEditing(false);
       },
     },
@@ -242,6 +240,7 @@ function AddTickerDialog({
 
   const { mutate: addInstrument, isPending } = useAddInstrumentToWatchlist({
     mutation: {
+      meta: { suppressErrorToast: true },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", watchlistId] });
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
@@ -250,7 +249,7 @@ function AddTickerDialog({
       },
       onError: (error: any) => {
         if (error?.status === 409) {
-          toast.error("Already in watchlist");
+          toast.error("Ticker is already in this watchlist");
         } else {
           toast.error("Failed to add ticker");
         }
@@ -343,9 +342,6 @@ export default function WatchlistPage() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", currentWatchlistId] });
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists"] });
-      },
-      onError: () => {
-        toast.error("Failed to remove ticker");
       },
     },
   });

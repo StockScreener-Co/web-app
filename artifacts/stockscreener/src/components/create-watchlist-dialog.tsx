@@ -45,9 +45,6 @@ export function CreateWatchlistDialog({ open, onOpenChange }: CreateWatchlistDia
         onOpenChange(false);
         form.reset();
       },
-      onError: (error: any) => {
-        toast.error(error?.message || "Failed to create watchlist");
-      },
     },
   });
 

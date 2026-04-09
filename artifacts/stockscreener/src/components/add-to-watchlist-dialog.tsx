@@ -44,8 +44,12 @@ export function AddToWatchlistDialog({
     },
   });
 
-  const { mutateAsync: addInstrument } = useAddInstrumentToWatchlist();
-  const { mutateAsync: createWatchlist } = useCreateWatchlist();
+  const { mutateAsync: addInstrument } = useAddInstrumentToWatchlist({
+    mutation: { meta: { suppressErrorToast: true } },
+  });
+  const { mutateAsync: createWatchlist } = useCreateWatchlist({
+    mutation: { meta: { suppressErrorToast: true } },
+  });
 
   const toggleCheck = (id: string) => {
     setCheckedIds((prev) => {

@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreatePortfolio, getGetMyPortfoliosQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -39,29 +39,16 @@ interface CreatePortfolioDialogProps {
 export function CreatePortfolioDialog({ open, onOpenChange }: CreatePortfolioDialogProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
   const { mutate: createPortfolio, isPending } = useCreatePortfolio({
     mutation: {
       onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Portfolio created successfully",
-        });
+        toast.success("Portfolio created successfully");
         queryClient.invalidateQueries({ queryKey: getGetMyPortfoliosQueryKey() });
-        // Also invalidate the specific "my" key used in the components if it's different, 
-        // but getGetMyPortfoliosQueryKey() should return ["/api/v1/portfolios/my"]
         if (user) {
           queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user.id] });
         }
         onOpenChange(false);
         form.reset();
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error?.message || "Failed to create portfolio",
-          variant: "destructive",
-        });
       },
     },
   });

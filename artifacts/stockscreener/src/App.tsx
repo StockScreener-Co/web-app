@@ -1,11 +1,14 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ApiError } from "@workspace/api-client-react";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 import Home from "@/pages/home";
 import PortfoliosList from "@/pages/portfolios-list";
@@ -16,7 +19,28 @@ import NotFound from "@/pages/not-found";
 import WatchlistsList from "@/pages/watchlists-list";
 import WatchlistPage from "@/pages/watchlist";
 
+function handleGlobalError(error: unknown, isQuery: boolean) {
+  if (error instanceof ApiError && error.status === 401) {
+    toast.error("Session expired, please sign in again");
+    return;
+  }
+  const fallback = isQuery ? "Failed to load data" : "Something went wrong";
+  toast.error(getApiErrorMessage(error, fallback));
+}
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      if (query.meta?.suppressErrorToast) return;
+      handleGlobalError(error, true);
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _vars, _ctx, mutation) => {
+      if (mutation.meta?.suppressErrorToast) return;
+      handleGlobalError(error, false);
+    },
+  }),
   defaultOptions: {
     queries: {
       throwOnError: false,
