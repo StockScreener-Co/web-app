@@ -19,6 +19,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { WatchlistItemDto } from "@/lib/api-client";
+import { useWatchlistSidebar } from "@/hooks/use-watchlist-sidebar";
+import { WatchlistSidebar } from "@/components/watchlist-sidebar";
 
 // ---- Signal logic (client-side) ----
 type Signal = "BUY" | "HOLD" | "SELL" | null;
@@ -318,6 +320,7 @@ export default function WatchlistPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [showAddTicker, setShowAddTicker] = useState(false);
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useWatchlistSidebar();
 
   const search = useSearch();
   const currentWatchlistId = useMemo(() => new URLSearchParams(search).get("id"), [search]);
@@ -346,33 +349,23 @@ export default function WatchlistPage() {
     },
   });
 
-  if (!user || !currentWatchlistId) {
+  if (!user) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="bg-primary/10 p-6 rounded-full mb-6">
           <Bookmark className="w-12 h-12 text-primary" />
         </div>
         <h2 className="text-3xl font-display font-bold mb-3 tracking-tight">
-          {!user ? "Please sign in" : "No Watchlist Selected"}
+          Please sign in
         </h2>
         <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
-          {!user
-            ? "Sign in to manage your watchlists."
-            : "Select a watchlist or create a new one."}
+          Sign in to manage your watchlists.
         </p>
-        <Link href={!user ? "/auth" : "/watchlists"}>
+        <Link href="/auth">
           <Button size="lg" className="rounded-2xl px-8 h-12 shadow-xl shadow-primary/20 font-semibold">
-            {!user ? "Sign In or Register" : "Go to Watchlists"}
+            Sign In or Register
           </Button>
         </Link>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
     );
   }
@@ -381,157 +374,184 @@ export default function WatchlistPage() {
   const marginOfSafety = watchlist?.marginOfSafety ?? 0;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
-        <div>
-          <h1 className="text-4xl font-display font-extrabold tracking-tight mb-2 flex items-center gap-3">
-            <Bookmark className="w-8 h-8 text-primary shrink-0" /> {watchlist?.name}
-          </h1>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <span>Margin of Safety:</span>
+    <div className="flex flex-1 overflow-hidden">
+      <WatchlistSidebar
+        currentWatchlistId={currentWatchlistId}
+        isOpen={sidebarOpen}
+        onToggle={toggleSidebar}
+      />
+      <div className="flex-1 min-w-0 overflow-y-auto">
+        {!currentWatchlistId ? (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-primary/10 p-6 rounded-full mb-6">
+              <Bookmark className="w-12 h-12 text-primary" />
+            </div>
+            <h2 className="text-3xl font-display font-bold mb-3 tracking-tight">
+              No Watchlist Selected
+            </h2>
+            <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
+              Select a watchlist from the sidebar or create a new one.
+            </p>
+          </div>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          </div>
+        ) : (
+          <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+              <div>
+                <h1 className="text-4xl font-display font-extrabold tracking-tight mb-2 flex items-center gap-3">
+                  <Bookmark className="w-8 h-8 text-primary shrink-0" /> {watchlist?.name}
+                </h1>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <span>Margin of Safety:</span>
+                  {currentWatchlistId && (
+                    <MoSEditor watchlistId={currentWatchlistId} value={marginOfSafety} />
+                  )}
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowAddTicker(true)}
+                className="shadow-lg shadow-primary/20 rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Ticker
+              </Button>
+            </div>
+
+            {items.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-28 bg-card/30 rounded-3xl border border-border/50 border-dashed"
+              >
+                <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Bookmark className="w-10 h-10 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Your watchlist is empty</h3>
+                <p className="text-muted-foreground max-w-md mx-auto text-lg mb-8">
+                  Add tickers to track their intrinsic value and get BUY/HOLD/SELL signals.
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() => setShowAddTicker(true)}
+                  className="rounded-full shadow-lg shadow-primary/20 px-8"
+                >
+                  <Plus className="w-5 h-5 mr-2" /> Add Ticker
+                </Button>
+              </motion.div>
+            ) : (
+              <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
+                        <th className="p-4 pl-6 font-semibold">Symbol / Name</th>
+                        <th className="p-4 font-semibold text-right">Price</th>
+                        <th className="p-4 font-semibold text-right">Today</th>
+                        <th className="p-4 font-semibold text-right">Intrinsic Value</th>
+                        <th className="p-4 font-semibold text-right">IV + MoS</th>
+                        <th className="p-4 font-semibold text-center">Signal</th>
+                        <th className="p-4 pr-6 font-semibold text-center w-16">Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/30">
+                      <AnimatePresence>
+                        {items.map((item, i) => {
+                          const signal = computeSignal(item.currentPrice, item.intrinsicValue, marginOfSafety);
+                          const ivWithMos =
+                            item.intrinsicValue != null
+                              ? item.intrinsicValue * (1 - marginOfSafety / 100)
+                              : null;
+                          const todayTrend = item.todayChange?.trend;
+                          return (
+                            <motion.tr
+                              key={item.instrumentId}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 10 }}
+                              transition={{ delay: i * 0.04 }}
+                              className="hover:bg-accent/20 transition-colors group"
+                            >
+                              <td className="p-4 pl-6">
+                                <Link
+                                  href={`/ticker/${item.instrumentId}`}
+                                  className="flex items-center gap-3"
+                                >
+                                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                    {item.symbol.slice(0, 2)}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold hover:text-primary transition-colors">
+                                      {item.symbol}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">{item.name}</div>
+                                  </div>
+                                </Link>
+                              </td>
+                              <td className="p-4 text-right font-semibold">
+                                ${item.currentPrice.toFixed(2)}
+                              </td>
+                              <td
+                                className={`p-4 text-right font-semibold text-sm ${
+                                  todayTrend === "UP"
+                                    ? "text-green-400"
+                                    : todayTrend === "DOWN"
+                                    ? "text-destructive"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {item.todayChange?.ratio != null
+                                  ? `${item.todayChange.ratio > 0 ? "+" : ""}${item.todayChange.ratio.toFixed(2)}%`
+                                  : "—"}
+                              </td>
+                              <td className="p-4 text-right">
+                                {currentWatchlistId && (
+                                  <IVCell item={item} watchlistId={currentWatchlistId} />
+                                )}
+                              </td>
+                              <td className="p-4 text-right text-sm font-semibold">
+                                {ivWithMos != null ? `$${ivWithMos.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
+                              </td>
+                              <td className="p-4 text-center">
+                                <SignalBadge signal={signal} />
+                              </td>
+                              <td className="p-4 pr-6 text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                                  onClick={() =>
+                                    removeInstrument({
+                                      id: currentWatchlistId!,
+                                      instrumentId: item.instrumentId,
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {currentWatchlistId && (
-              <MoSEditor watchlistId={currentWatchlistId} value={marginOfSafety} />
+              <AddTickerDialog
+                watchlistId={currentWatchlistId}
+                open={showAddTicker}
+                onOpenChange={setShowAddTicker}
+              />
             )}
           </div>
-        </div>
-        <Button
-          onClick={() => setShowAddTicker(true)}
-          className="shadow-lg shadow-primary/20 rounded-xl"
-        >
-          <Plus className="w-4 h-4 mr-2" /> Add Ticker
-        </Button>
+        )}
       </div>
-
-      {items.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-28 bg-card/30 rounded-3xl border border-border/50 border-dashed"
-        >
-          <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-            <Bookmark className="w-10 h-10 text-muted-foreground/50" />
-          </div>
-          <h3 className="text-2xl font-bold mb-3">Your watchlist is empty</h3>
-          <p className="text-muted-foreground max-w-md mx-auto text-lg mb-8">
-            Add tickers to track their intrinsic value and get BUY/HOLD/SELL signals.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => setShowAddTicker(true)}
-            className="rounded-full shadow-lg shadow-primary/20 px-8"
-          >
-            <Plus className="w-5 h-5 mr-2" /> Add Ticker
-          </Button>
-        </motion.div>
-      ) : (
-        <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
-                  <th className="p-4 pl-6 font-semibold">Symbol / Name</th>
-                  <th className="p-4 font-semibold text-right">Price</th>
-                  <th className="p-4 font-semibold text-right">Today</th>
-                  <th className="p-4 font-semibold text-right">Intrinsic Value</th>
-                  <th className="p-4 font-semibold text-right">IV + MoS</th>
-                  <th className="p-4 font-semibold text-center">Signal</th>
-                  <th className="p-4 pr-6 font-semibold text-center w-16">Remove</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/30">
-                <AnimatePresence>
-                  {items.map((item, i) => {
-                    const signal = computeSignal(item.currentPrice, item.intrinsicValue, marginOfSafety);
-                    const ivWithMos =
-                      item.intrinsicValue != null
-                        ? item.intrinsicValue * (1 - marginOfSafety / 100)
-                        : null;
-                    const todayTrend = item.todayChange?.trend;
-                    return (
-                      <motion.tr
-                        key={item.instrumentId}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ delay: i * 0.04 }}
-                        className="hover:bg-accent/20 transition-colors group"
-                      >
-                        <td className="p-4 pl-6">
-                          <Link
-                            href={`/ticker/${item.instrumentId}`}
-                            className="flex items-center gap-3"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
-                              {item.symbol.slice(0, 2)}
-                            </div>
-                            <div>
-                              <div className="font-bold hover:text-primary transition-colors">
-                                {item.symbol}
-                              </div>
-                              <div className="text-xs text-muted-foreground">{item.name}</div>
-                            </div>
-                          </Link>
-                        </td>
-                        <td className="p-4 text-right font-semibold">
-                          ${item.currentPrice.toFixed(2)}
-                        </td>
-                        <td
-                          className={`p-4 text-right font-semibold text-sm ${
-                            todayTrend === "UP"
-                              ? "text-green-400"
-                              : todayTrend === "DOWN"
-                              ? "text-destructive"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {item.todayChange?.ratio != null
-                            ? `${item.todayChange.ratio > 0 ? "+" : ""}${item.todayChange.ratio.toFixed(2)}%`
-                            : "—"}
-                        </td>
-                        <td className="p-4 text-right">
-                          {currentWatchlistId && (
-                            <IVCell item={item} watchlistId={currentWatchlistId} />
-                          )}
-                        </td>
-                        <td className="p-4 text-right text-sm font-semibold">
-                          {ivWithMos != null ? `$${ivWithMos.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 text-center">
-                          <SignalBadge signal={signal} />
-                        </td>
-                        <td className="p-4 pr-6 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                            onClick={() =>
-                              removeInstrument({
-                                id: currentWatchlistId!,
-                                instrumentId: item.instrumentId,
-                              })
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {currentWatchlistId && (
-        <AddTickerDialog
-          watchlistId={currentWatchlistId}
-          open={showAddTicker}
-          onOpenChange={setShowAddTicker}
-        />
-      )}
     </div>
   );
 }
