@@ -22,7 +22,12 @@
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(git commit:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(ls -d .worktrees)",
+      "Bash(ls -d worktrees)",
+      "Bash(git -C \"D:/Projects/SS/web-app\" add artifacts/stockscreener/src/pages/watchlist.tsx)",
+      "Bash(git -C D:/Projects/SS/web-app commit -m ':*)",
+      "Bash(echo \"Exit: $?\")"
     ]
   }
 }

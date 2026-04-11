@@ -223,33 +223,6 @@ export default function Portfolio() {
     setShowAdd(true);
   }
 
-  if (!user || !currentPortfolioId) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="bg-primary/10 p-6 rounded-full mb-6">
-          <Briefcase className="w-12 h-12 text-primary" />
-        </div>
-        <h2 className="text-3xl font-display font-bold mb-3 tracking-tight">
-          {!user ? "Please sign in" : "No Portfolio Selected"}
-        </h2>
-        <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
-          {!user 
-            ? "To manage your stock portfolio and track performance, you need to sign in to your account."
-            : "Please select a portfolio from the menu or create a new one to start tracking your investments."}
-        </p>
-        <Link href={!user ? "/auth" : "/portfolios"}>
-          <Button size="lg" className="rounded-2xl px-8 h-12 shadow-xl shadow-primary/20 font-semibold">
-            {!user ? "Sign In or Register" : "Go to Portfolios"}
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <div className="p-12 text-center">Loading portfolio details...</div>;
-  }
-
   const assets = portfolio?.assets || [];
 
   const aggregates = useMemo(() => {
@@ -272,6 +245,33 @@ export default function Portfolio() {
       positionCount: assets.length,
     };
   }, [assets]);
+
+  if (!user || !currentPortfolioId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="bg-primary/10 p-6 rounded-full mb-6">
+          <Briefcase className="w-12 h-12 text-primary" />
+        </div>
+        <h2 className="text-3xl font-display font-bold mb-3 tracking-tight">
+          {!user ? "Please sign in" : "No Portfolio Selected"}
+        </h2>
+        <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
+          {!user
+            ? "To manage your stock portfolio and track performance, you need to sign in to your account."
+            : "Please select a portfolio from the menu or create a new one to start tracking your investments."}
+        </p>
+        <Link href={!user ? "/auth" : "/portfolios"}>
+          <Button size="lg" className="rounded-2xl px-8 h-12 shadow-xl shadow-primary/20 font-semibold">
+            {!user ? "Sign In or Register" : "Go to Portfolios"}
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <div className="p-12 text-center">Loading portfolio details...</div>;
+  }
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-12">

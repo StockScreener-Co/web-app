@@ -3,6 +3,8 @@ import { useTheme } from "./theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { useLastWatchlist } from "@/hooks/use-last-watchlist";
+import { useWatchlistSidebar } from "@/hooks/use-watchlist-sidebar";
+import { WatchlistSidebar } from "@/components/watchlist-sidebar";
 import { useGetMyPortfolios } from "@workspace/api-client-react";
 import { Moon, Sun, Search, Briefcase, Menu, X, User, LogOut, ChevronDown, Bookmark } from "lucide-react";
 import { Button } from "./ui/button";
@@ -85,11 +87,18 @@ function PortfolioDropdown() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const search = useSearch();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const { lastPortfolioId } = useLastPortfolio();
   const { lastWatchlistId } = useLastWatchlist();
+  const { isOpen: watchlistSidebarOpen, toggle: toggleWatchlistSidebar } = useWatchlistSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const currentWatchlistId = useMemo(
+    () => new URLSearchParams(search).get("id"),
+    [search]
+  );
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -243,8 +252,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </AnimatePresence>
       </header>
 
-      <main className="flex-1 w-full flex flex-col relative">
+      <main className="flex-1 w-full flex flex-col relative overflow-x-hidden">
         {children}
+        {user && (
+          <WatchlistSidebar
+            currentWatchlistId={currentWatchlistId}
+            isOpen={watchlistSidebarOpen}
+            onToggle={toggleWatchlistSidebar}
+          />
+        )}
       </main>
       
       <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border/40 mt-auto">
