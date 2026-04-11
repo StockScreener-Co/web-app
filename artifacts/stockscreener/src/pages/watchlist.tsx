@@ -529,7 +529,6 @@ export default function WatchlistPage() {
                         <th className="p-4 font-semibold text-right">Intrinsic Value</th>
                         <th className="p-4 font-semibold text-right">IV + MoS</th>
                         <th className="p-4 font-semibold text-center">Signal</th>
-                        <th className="p-4 pr-6 font-semibold text-center w-16">Remove</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
@@ -551,20 +550,48 @@ export default function WatchlistPage() {
                               className="hover:bg-accent/20 transition-colors group"
                             >
                               <td className="p-4 pl-6">
-                                <Link
-                                  href={`/ticker/${item.instrumentId}`}
-                                  className="flex items-center gap-3"
-                                >
-                                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                    {item.symbol.slice(0, 2)}
-                                  </div>
-                                  <div>
-                                    <div className="font-bold hover:text-primary transition-colors">
-                                      {item.symbol}
+                                <div className="flex items-center gap-3">
+                                  <Link
+                                    href={`/ticker/${item.instrumentId}`}
+                                    className="flex items-center gap-3 min-w-0"
+                                  >
+                                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                      {item.symbol.slice(0, 2)}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">{item.name}</div>
+                                    <div>
+                                      <div className="font-bold hover:text-primary transition-colors">
+                                        {item.symbol}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">{item.name}</div>
+                                    </div>
+                                  </Link>
+                                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() =>
+                                        removeInstrument({
+                                          id: currentWatchlistId!,
+                                          instrumentId: item.instrumentId,
+                                        })
+                                      }
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                    {currentWatchlistId && (
+                                      <NoteButton item={item} watchlistId={currentWatchlistId} />
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                      title="Price alerts (coming soon)"
+                                    >
+                                      <Bell className="w-3.5 h-3.5" />
+                                    </Button>
                                   </div>
-                                </Link>
+                                </div>
                               </td>
                               <td className="p-4 text-right font-semibold">
                                 ${item.currentPrice.toFixed(2)}
@@ -592,21 +619,6 @@ export default function WatchlistPage() {
                               </td>
                               <td className="p-4 text-center">
                                 <SignalBadge signal={signal} />
-                              </td>
-                              <td className="p-4 pr-6 text-center">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                                  onClick={() =>
-                                    removeInstrument({
-                                      id: currentWatchlistId!,
-                                      instrumentId: item.instrumentId,
-                                    })
-                                  }
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
                               </td>
                             </motion.tr>
                           );
