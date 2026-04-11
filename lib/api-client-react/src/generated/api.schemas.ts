@@ -243,12 +243,16 @@ export interface WatchlistItemDto {
   currentPrice: number;
   todayChange: MetricCard;
   intrinsicValue?: number | null;
+  note?: string | null;
 }
 
 export interface WatchlistItemUpdateDto {
   /** Set to a positive number to record intrinsic value. Set to null to clear it. Omitting the field is a no-op.
    */
   intrinsicValue?: number | null;
+  /** Set to a string to save a note. Set to null to clear it. Omitting the field is a no-op.
+   */
+  note?: string | null;
 }
 
 export interface WatchlistDetailsDto {

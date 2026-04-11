@@ -873,6 +873,9 @@ components:
         intrinsicValue:
           type: number
           nullable: true
+        note:
+          type: string
+          nullable: true
       required: [instrumentId, symbol, name, currentPrice, todayChange]
     WatchlistItemUpdateDto:
       type: object
@@ -882,6 +885,12 @@ components:
           nullable: true
           description: >
             Set to a positive number to record intrinsic value.
+            Set to null to clear it. Omitting the field is a no-op.
+        note:
+          type: string
+          nullable: true
+          description: >
+            Set to a string to save a note.
             Set to null to clear it. Omitting the field is a no-op.
     WatchlistDetailsDto:
       type: object
