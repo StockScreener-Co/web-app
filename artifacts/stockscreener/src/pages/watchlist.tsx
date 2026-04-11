@@ -154,6 +154,9 @@ function NoteButton({
         queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", watchlistId] });
         setOpen(false);
       },
+      onError: () => {
+        toast.error("Failed to save note");
+      },
     },
   });
 
@@ -585,8 +588,9 @@ export default function WatchlistPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                      className="h-7 w-7 text-muted-foreground opacity-50 cursor-not-allowed"
                                       title="Price alerts (coming soon)"
+                                      disabled
                                     >
                                       <Bell className="w-3.5 h-3.5" />
                                     </Button>
