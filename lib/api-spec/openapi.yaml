@@ -873,7 +873,7 @@ components:
         intrinsicValue:
           type: number
           nullable: true
-        note:
+        notes:
           type: string
           nullable: true
       required: [instrumentId, symbol, name, currentPrice, todayChange]
@@ -886,7 +886,7 @@ components:
           description: >
             Set to a positive number to record intrinsic value.
             Set to null to clear it. Omitting the field is a no-op.
-        note:
+        notes:
           type: string
           nullable: true
           description: >

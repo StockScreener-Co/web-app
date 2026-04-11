@@ -243,7 +243,7 @@ export interface WatchlistItemDto {
   currentPrice: number;
   todayChange: MetricCard;
   intrinsicValue?: number | null;
-  note?: string | null;
+  notes?: string | null;
 }
 
 export interface WatchlistItemUpdateDto {
@@ -252,7 +252,7 @@ export interface WatchlistItemUpdateDto {
   intrinsicValue?: number | null;
   /** Set to a string to save a note. Set to null to clear it. Omitting the field is a no-op.
    */
-  note?: string | null;
+  notes?: string | null;
 }
 
 export interface WatchlistDetailsDto {

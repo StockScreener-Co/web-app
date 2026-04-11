@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useGetWatchlistById,
@@ -146,7 +147,7 @@ function NoteButton({
 }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(item.note ?? "");
+  const [draft, setDraft] = useState(item.notes ?? "");
 
   const { mutate: updateItem, isPending } = useUpdateWatchlistItem({
     mutation: {
@@ -164,7 +165,7 @@ function NoteButton({
     updateItem({
       id: watchlistId,
       instrumentId: item.instrumentId,
-      data: { note: draft.trim() === "" ? null : draft.trim() },
+      data: { notes: draft.trim() === "" ? null : draft.trim() },
     });
   };
 
@@ -172,23 +173,32 @@ function NoteButton({
     <Popover
       open={open}
       onOpenChange={(next) => {
-        if (next) setDraft(item.note ?? "");
+        if (next) setDraft(item.notes ?? "");
         setOpen(next);
       }}
     >
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`h-7 w-7 transition-all ${
-            item.note
-              ? "text-primary opacity-100"
-              : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-7 transition-all ${
+                item.notes
+                  ? "text-primary opacity-100"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        {item.notes && (
+          <TooltipContent side="bottom" className="max-w-xs whitespace-pre-wrap">
+            {item.notes}
+          </TooltipContent>
+        )}
+      </Tooltip>
       <PopoverContent className="w-64 p-3" align="start" side="bottom">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
