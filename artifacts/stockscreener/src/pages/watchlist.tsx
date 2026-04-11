@@ -3,11 +3,13 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastWatchlist } from "@/hooks/use-last-watchlist";
 import { Link, useSearch, useLocation } from "wouter";
-import { Bookmark, Plus, Search, Trash2, Loader2, Pencil } from "lucide-react";
+import { Bookmark, Plus, Search, Trash2, Loader2, Pencil, FileText, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useGetWatchlistById,
   useUpdateWatchlist,
@@ -19,8 +21,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { WatchlistItemDto } from "@/lib/api-client";
-import { useWatchlistSidebar } from "@/hooks/use-watchlist-sidebar";
-import { WatchlistSidebar } from "@/components/watchlist-sidebar";
 
 // ---- Signal logic (client-side) ----
 type Signal = "BUY" | "HOLD" | "SELL" | null;
@@ -133,6 +133,88 @@ function IVCell({
     >
       {item.intrinsicValue != null ? `$${item.intrinsicValue.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
     </button>
+  );
+}
+
+// ---- Note popover button ----
+function NoteButton({
+  item,
+  watchlistId,
+}: {
+  item: WatchlistItemDto;
+  watchlistId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(item.note ?? "");
+
+  const { mutate: updateItem, isPending } = useUpdateWatchlistItem({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/watchlists", watchlistId] });
+        setOpen(false);
+      },
+    },
+  });
+
+  const save = () => {
+    updateItem({
+      id: watchlistId,
+      instrumentId: item.instrumentId,
+      data: { note: draft.trim() === "" ? null : draft.trim() },
+    });
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setDraft(item.note ?? "");
+        setOpen(next);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 transition-all ${
+            item.note
+              ? "text-primary opacity-100"
+              : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start" side="bottom">
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Note for {item.symbol}
+          </p>
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Add a note..."
+            className="text-sm resize-none h-24"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={save} disabled={isPending}>
+              {isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+              Save
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -320,7 +402,6 @@ export default function WatchlistPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [showAddTicker, setShowAddTicker] = useState(false);
-  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useWatchlistSidebar();
 
   const search = useSearch();
   const currentWatchlistId = useMemo(() => new URLSearchParams(search).get("id"), [search]);
@@ -374,12 +455,7 @@ export default function WatchlistPage() {
   const marginOfSafety = watchlist?.marginOfSafety ?? 0;
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <WatchlistSidebar
-        currentWatchlistId={currentWatchlistId}
-        isOpen={sidebarOpen}
-        onToggle={toggleSidebar}
-      />
+    <div className="flex flex-1">
       <div className="flex-1 min-w-0 overflow-y-auto">
         {!currentWatchlistId ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
