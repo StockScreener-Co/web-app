@@ -33,6 +33,10 @@ export interface TransactionResponseDto {
   symbol: string;
 }
 
+export interface DeleteTransactionsRequest {
+  transactionIds: string[];
+}
+
 export interface InstrumentDto {
   id: string;
   symbol: string;
