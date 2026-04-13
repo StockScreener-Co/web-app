@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { Link, useSearch, useLocation } from "wouter";
+import { toast } from "sonner";
 import {
   Briefcase, Search, Plus
 } from "lucide-react";
@@ -208,6 +209,8 @@ export default function Portfolio() {
     } catch (err: any) {
       console.error("Failed to delete transactions:", err);
       setDeletingTxIds([]);
+      setSelectedTxIds(new Set());
+      toast.error("Failed to delete transaction(s). Please try again.");
     }
   }
 
