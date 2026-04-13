@@ -187,17 +187,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionResponseDto"
+  /v1/transactions:
     delete:
-      operationId: deleteTransaction
+      operationId: deleteTransactions
       tags: [transactions]
-      summary: Delete a transaction
-      parameters:
-        - name: transactionId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Delete one or more transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteTransactionsRequest"
       responses:
         "204":
           description: No content
@@ -525,6 +525,16 @@ components:
         - tradeDate
         - operationType
         - symbol
+    DeleteTransactionsRequest:
+      type: object
+      properties:
+        transactionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - transactionIds
     InstrumentDto:
       type: object
       properties:
