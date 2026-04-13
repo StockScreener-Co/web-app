@@ -1,14 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { Search, TrendingUp, PieChart, Bell, ShieldCheck, ArrowRight, Plus, BarChart2, Star, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TickerCard, InstrumentMostPopularDto } from "@/components/ticker-card";
+import { TickerCard } from "@/components/ticker-card";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
-import { customFetch } from "@/lib/api-client";
+import { useGetMostPopularStocks, useSearchInstruments, getSearchInstrumentsQueryKey } from "@/lib/api-client";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const PORTFOLIO_DEMO = [
   { symbol: "AAPL", name: "Apple Inc.", shares: 10, avgPrice: 150, currentPrice: 175.43, color: "#22c55e" },
@@ -46,8 +47,8 @@ const FEATURES = [
   },
   {
     icon: ShieldCheck,
-    title: "Stored Locally",
-    desc: "Your portfolio data never leaves your device. Private by default, always.",
+    title: "Secure Account",
+    desc: "Your data is protected behind your personal account. Sign in from any device, anytime.",
   },
 ];
 
@@ -55,58 +56,13 @@ export default function Home() {
   const { user } = useAuth();
   const { lastPortfolioId } = useLastPortfolio();
   const [query, setQuery] = useState("");
-  const [popularInstruments, setPopularInstruments] = useState<InstrumentMostPopularDto[]>([]);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isLoadingPopular, setIsLoadingPopular] = useState(false);
-  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  const { data: popularInstruments = [], isLoading: isLoadingPopular } = useGetMostPopularStocks();
 
-  useEffect(() => {
-    async function fetchPopular() {
-      setIsLoadingPopular(true);
-      try {
-        const data = await customFetch<InstrumentMostPopularDto[]>("/api/v1/stock-popularity/most-popular");
-        if (Array.isArray(data)) {
-          setPopularInstruments(data);
-        } else {
-          console.error("Expected array from most-popular, got:", data);
-          setPopularInstruments([]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch popular instruments:", err);
-      } finally {
-        setIsLoadingPopular(false);
-      }
-    }
-
-    fetchPopular();
-  }, []);
-
-  useEffect(() => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setIsLoadingSearch(false);
-      return;
-    }
-
-    setIsLoadingSearch(true);
-    const timeoutId = setTimeout(async () => {
-      try {
-        const data = await customFetch<any[]>(`/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=10`);
-        if (Array.isArray(data)) {
-          setSearchResults(data);
-        } else {
-          console.error("Expected array from search, got:", data);
-          setSearchResults([]);
-        }
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setIsLoadingSearch(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [query]);
+  const debouncedQuery = useDebounce(query, 300);
+  const { data: searchResults = [], isLoading: isLoadingSearch } = useSearchInstruments(
+    { query: debouncedQuery, limit: 10 },
+    { query: { enabled: !!debouncedQuery.trim(), queryKey: getSearchInstrumentsQueryKey({ query: debouncedQuery, limit: 10 }) } }
+  );
 
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
