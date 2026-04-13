@@ -697,7 +697,7 @@ export default function Portfolio() {
                               <Checkbox
                                 checked={allTxSelected ? true : someTxSelected ? "indeterminate" : false}
                                 onCheckedChange={(checked) => {
-                                  if (checked) {
+                                  if (checked === true) {
                                     setSelectedTxIds(new Set(transactions.map((t) => t.id)));
                                   } else {
                                     setSelectedTxIds(new Set());
