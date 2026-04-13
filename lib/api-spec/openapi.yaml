@@ -162,6 +162,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionResponseDto"
+  /v1/transactions:
+    delete:
+      operationId: deleteTransactions
+      tags: [transactions]
+      summary: Delete one or more transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteTransactionsRequest"
+      responses:
+        "204":
+          description: No content
   /v1/transactions/{transactionId}:
     patch:
       operationId: updateTransaction
@@ -187,20 +201,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionResponseDto"
-  /v1/transactions:
-    delete:
-      operationId: deleteTransactions
-      tags: [transactions]
-      summary: Delete one or more transactions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DeleteTransactionsRequest"
-      responses:
-        "204":
-          description: No content
   /v1/instruments/{instrumentId}/profile:
     get:
       operationId: getInstrumentProfile
