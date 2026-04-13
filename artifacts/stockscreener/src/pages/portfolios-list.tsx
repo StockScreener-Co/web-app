@@ -143,17 +143,39 @@ export default function PortfoliosList() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-muted/30 rounded-3xl border-2 border-dashed border-border">
-          <Briefcase className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No portfolios found</h3>
-          <p className="text-muted-foreground mb-8">You haven't created any portfolios yet.</p>
-          <Button 
-            variant="outline" 
-            className="rounded-xl"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" /> Create Your First Portfolio
-          </Button>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-full max-w-md bg-card border border-border/50 rounded-2xl overflow-hidden shadow-lg">
+            <div className="p-6 border-b border-border/40">
+              <h3 className="text-lg font-bold text-foreground mb-1">Get started in 3 steps</h3>
+              <p className="text-sm text-muted-foreground">Build your first portfolio and track your investments.</p>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-4 bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm flex-shrink-0">1</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-foreground text-sm">Create a portfolio</p>
+                  <p className="text-xs text-muted-foreground">Give it a name and start tracking</p>
+                </div>
+                <Button size="sm" className="rounded-lg flex-shrink-0" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="w-3 h-3 mr-1" /> Create
+                </Button>
+              </div>
+              <div aria-hidden="true" className="flex items-center gap-4 rounded-xl p-4 opacity-40">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">2</div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Add your first transaction</p>
+                  <p className="text-xs text-muted-foreground">Buy or sell — enter price, shares and date</p>
+                </div>
+              </div>
+              <div aria-hidden="true" className="flex items-center gap-4 rounded-xl p-4 opacity-40">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">3</div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Track your P&L</p>
+                  <p className="text-xs text-muted-foreground">See total return, allocation and performance</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
