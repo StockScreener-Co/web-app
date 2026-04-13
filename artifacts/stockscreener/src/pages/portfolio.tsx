@@ -691,7 +691,39 @@ export default function Portfolio() {
                     {isTransactionsLoading ? (
                       <div className="p-12 text-center text-muted-foreground">Loading transactions...</div>
                     ) : !transactions || transactions.length === 0 ? (
-                      <div className="p-12 text-center text-muted-foreground">No transactions yet.</div>
+                      <div className="flex flex-col items-center justify-center py-16 px-4">
+                        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5">
+                          <Briefcase className="w-7 h-7 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">Start building your portfolio</h3>
+                        <p className="text-sm text-muted-foreground text-center max-w-xs mb-6 leading-relaxed">
+                          Add your first transaction and watch your P&L come to life.
+                        </p>
+                        <Button onClick={() => setShowAdd(true)} className="rounded-xl shadow-md shadow-primary/20 mb-8">
+                          <Plus className="w-4 h-4 mr-2" /> Add Transaction
+                        </Button>
+                        <div className="w-full max-w-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="flex-1 h-px bg-border/50" />
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">More ways — coming soon</span>
+                            <div className="flex-1 h-px bg-border/50" />
+                          </div>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <div aria-hidden="true" className="flex items-center gap-1.5 bg-muted/50 border border-border/50 rounded-full px-3 py-1.5 opacity-50 cursor-not-allowed">
+                              <span className="text-xs">🔗</span>
+                              <span className="text-xs text-muted-foreground font-medium">Brokerage sync</span>
+                            </div>
+                            <div aria-hidden="true" className="flex items-center gap-1.5 bg-muted/50 border border-border/50 rounded-full px-3 py-1.5 opacity-50 cursor-not-allowed">
+                              <span className="text-xs">📄</span>
+                              <span className="text-xs text-muted-foreground font-medium">Import CSV</span>
+                            </div>
+                            <div aria-hidden="true" className="flex items-center gap-1.5 bg-muted/50 border border-border/50 rounded-full px-3 py-1.5 opacity-50 cursor-not-allowed">
+                              <span className="text-xs">🎮</span>
+                              <span className="text-xs text-muted-foreground font-medium">Demo portfolio</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <table className="w-full text-left border-collapse">
                         <thead>
