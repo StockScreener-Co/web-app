@@ -59,6 +59,7 @@ export default function Home() {
   const { data: popularInstruments = [], isLoading: isLoadingPopular } = useGetMostPopularStocks();
 
   const debouncedQuery = useDebounce(query, 300);
+  const isTyping = query.trim() !== debouncedQuery.trim();
   const { data: searchResults = [], isLoading: isLoadingSearch } = useSearchInstruments(
     { query: debouncedQuery, limit: 10 },
     { query: { enabled: !!debouncedQuery.trim(), queryKey: getSearchInstrumentsQueryKey({ query: debouncedQuery, limit: 10 }) } }
@@ -122,7 +123,7 @@ export default function Home() {
                     className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden max-h-[400px] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {isLoadingSearch ? (
+                    {(isLoadingSearch || isTyping) ? (
                       <div className="p-8 text-center">
                         <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
                         <p className="text-sm text-muted-foreground">Searching...</p>
