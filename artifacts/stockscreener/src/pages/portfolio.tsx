@@ -35,7 +35,7 @@ import {
   useDeleteTransactions,
 } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { OperationType, TransactionResponseDto, DeleteTransactionsRequest } from "@/lib/api-client";
+import type { OperationType, TransactionResponseDto } from "@/lib/api-client";
 
 export default function Portfolio() {
   const { user } = useAuth();
@@ -275,6 +275,11 @@ export default function Portfolio() {
     return <div className="p-12 text-center">Loading portfolio details...</div>;
   }
 
+  const allTxSelected =
+    !!transactions && transactions.length > 0 &&
+    selectedTxIds.size === transactions.length;
+  const someTxSelected = selectedTxIds.size > 0 && !allTxSelected;
+
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
       {/* Header */}
@@ -503,7 +508,7 @@ export default function Portfolio() {
             </motion.div>
           )}
 
-          <Tabs defaultValue="holdings">
+          <Tabs defaultValue="holdings" onValueChange={() => setSelectedTxIds(new Set())}>
             <TabsList className="mb-4">
               <TabsTrigger value="holdings">Holdings</TabsTrigger>
               <TabsTrigger value="transactions">Transactions</TabsTrigger>
@@ -663,69 +668,118 @@ export default function Portfolio() {
             </TabsContent>
 
             <TabsContent value="transactions">
-              <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  {isTransactionsLoading ? (
-                    <div className="p-12 text-center text-muted-foreground">Loading transactions...</div>
-                  ) : !transactions || transactions.length === 0 ? (
-                    <div className="p-12 text-center text-muted-foreground">No transactions yet.</div>
-                  ) : (
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
-                          <th className="p-4 pl-6 font-semibold">Date</th>
-                          <th className="p-4 font-semibold">Symbol</th>
-                          <th className="p-4 font-semibold">Type</th>
-                          <th className="p-4 font-semibold text-right">Qty</th>
-                          <th className="p-4 font-semibold text-right">Price</th>
-                          <th className="p-4 font-semibold text-right">Total</th>
-                          <th className="p-4 pr-6 font-semibold text-center w-20">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/30">
-                        {transactions.map((tx) => (
-                          <tr key={tx.id} className="hover:bg-accent/20 transition-colors group">
-                            <td className="p-4 pl-6 text-sm text-muted-foreground">{tx.tradeDate}</td>
-                            <td className="p-4 font-bold">{tx.symbol}</td>
-                            <td className="p-4">
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                tx.operationType === "BUY"
-                                  ? "bg-green-400/10 text-green-400"
-                                  : tx.operationType === "SELL"
-                                  ? "bg-destructive/10 text-destructive"
-                                  : "bg-secondary text-muted-foreground"
-                              }`}>
-                                {tx.operationType}
-                              </span>
-                            </td>
-                            <td className="p-4 text-right font-medium">{tx.quantity}</td>
-                            <td className="p-4 text-right font-medium">{fmt(tx.price)}</td>
-                            <td className="p-4 text-right font-semibold">{fmt(tx.quantity * tx.price)}</td>
-                            <td className="p-4 pr-6 text-center">
-                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => openEditDialog(tx)}
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => setDeletingTxIds([tx.id])}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </td>
+              <div className="space-y-3">
+                {/* Bulk action bar */}
+                {selectedTxIds.size > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeletingTxIds([...selectedTxIds])}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remove ({selectedTxIds.size})
+                    </Button>
+                  </div>
+                )}
+
+                <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    {isTransactionsLoading ? (
+                      <div className="p-12 text-center text-muted-foreground">Loading transactions...</div>
+                    ) : !transactions || transactions.length === 0 ? (
+                      <div className="p-12 text-center text-muted-foreground">No transactions yet.</div>
+                    ) : (
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
+                            <th className="p-4 pl-6 w-10">
+                              <Checkbox
+                                checked={allTxSelected ? true : someTxSelected ? "indeterminate" : false}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedTxIds(new Set(transactions.map((t) => t.id)));
+                                  } else {
+                                    setSelectedTxIds(new Set());
+                                  }
+                                }}
+                                aria-label="Select all transactions"
+                              />
+                            </th>
+                            <th className="p-4 font-semibold">Date</th>
+                            <th className="p-4 font-semibold">Symbol</th>
+                            <th className="p-4 font-semibold">Type</th>
+                            <th className="p-4 font-semibold text-right">Qty</th>
+                            <th className="p-4 font-semibold text-right">Price</th>
+                            <th className="p-4 font-semibold text-right">Total</th>
+                            <th className="p-4 pr-6 font-semibold text-center w-20">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                        </thead>
+                        <tbody className="divide-y divide-border/30">
+                          {transactions.map((tx) => {
+                            const isSelected = selectedTxIds.has(tx.id);
+                            return (
+                              <tr
+                                key={tx.id}
+                                className={`hover:bg-accent/20 transition-colors group ${isSelected ? "bg-accent/10" : ""}`}
+                              >
+                                <td className="p-4 pl-6">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedTxIds((prev) => {
+                                        const next = new Set(prev);
+                                        if (checked) next.add(tx.id);
+                                        else next.delete(tx.id);
+                                        return next;
+                                      });
+                                    }}
+                                    aria-label={`Select transaction ${tx.id}`}
+                                  />
+                                </td>
+                                <td className="p-4 text-sm text-muted-foreground">{tx.tradeDate}</td>
+                                <td className="p-4 font-bold">{tx.symbol}</td>
+                                <td className="p-4">
+                                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                    tx.operationType === "BUY"
+                                      ? "bg-green-400/10 text-green-400"
+                                      : tx.operationType === "SELL"
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-secondary text-muted-foreground"
+                                  }`}>
+                                    {tx.operationType}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right font-medium">{tx.quantity}</td>
+                                <td className="p-4 text-right font-medium">{fmt(tx.price)}</td>
+                                <td className="p-4 text-right font-semibold">{fmt(tx.quantity * tx.price)}</td>
+                                <td className="p-4 pr-6 text-center">
+                                  <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                      onClick={() => openEditDialog(tx)}
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => setDeletingTxIds([tx.id])}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
