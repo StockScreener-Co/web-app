@@ -32,10 +32,10 @@ import {
   useSearchInstruments,
   useGetTransactionsForPortfolio,
   useUpdateTransaction,
-  useDeleteTransaction,
+  useDeleteTransactions,
 } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import type { OperationType, TransactionResponseDto } from "@/lib/api-client";
+import type { OperationType, TransactionResponseDto, DeleteTransactionsRequest } from "@/lib/api-client";
 
 export default function Portfolio() {
   const { user } = useAuth();
@@ -55,7 +55,8 @@ export default function Portfolio() {
   const [showResults, setShowResults] = useState(false);
   const [formError, setFormError] = useState("");
   const [editingTx, setEditingTx] = useState<TransactionResponseDto | null>(null);
-  const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
+  const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
+  const [deletingTxIds, setDeletingTxIds] = useState<string[]>([]);
 
   const search = useSearch();
   const currentPortfolioId = useMemo(() => new URLSearchParams(search).get('id'), [search]);
@@ -87,7 +88,7 @@ export default function Portfolio() {
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
-  const deleteTransaction = useDeleteTransaction();
+  const deleteTransactions = useDeleteTransactions();
   const { visibleColumns, toggleColumn, allColumns } = usePortfolioColumns();
 
   const { data: transactions, isLoading: isTransactionsLoading } = useGetTransactionsForPortfolio(
@@ -196,16 +197,17 @@ export default function Portfolio() {
   }
 
   async function handleDeleteConfirm() {
-    if (!deletingTxId) return;
+    if (!deletingTxIds.length) return;
     try {
-      await deleteTransaction.mutateAsync({ transactionId: deletingTxId });
+      await deleteTransactions.mutateAsync({ data: { transactionIds: deletingTxIds } });
       queryClient.invalidateQueries({
         queryKey: [`/api/v1/transactions/portfolio/${currentPortfolioId}`],
       });
-      setDeletingTxId(null);
+      setDeletingTxIds([]);
+      setSelectedTxIds(new Set());
     } catch (err: any) {
-      console.error("Failed to delete transaction:", err);
-      setDeletingTxId(null);
+      console.error("Failed to delete transactions:", err);
+      setDeletingTxIds([]);
     }
   }
 
@@ -713,7 +715,7 @@ export default function Portfolio() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => setDeletingTxId(tx.id)}
+                                  onClick={() => setDeletingTxIds([tx.id])}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
@@ -731,10 +733,14 @@ export default function Portfolio() {
         </div>
       )}
 
-      <AlertDialog open={!!deletingTxId} onOpenChange={(open) => { if (!open) setDeletingTxId(null); }}>
+      <AlertDialog open={deletingTxIds.length > 0} onOpenChange={(open) => { if (!open) setDeletingTxIds([]); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deletingTxIds.length === 1
+                ? "Delete this transaction?"
+                : `Delete ${deletingTxIds.length} transactions?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone.
             </AlertDialogDescription>
@@ -744,9 +750,9 @@ export default function Portfolio() {
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={handleDeleteConfirm}
-              disabled={deleteTransaction.isPending}
+              disabled={deleteTransactions.isPending}
             >
-              {deleteTransaction.isPending ? "Deleting..." : "Delete"}
+              {deleteTransactions.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
