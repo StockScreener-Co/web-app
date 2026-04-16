@@ -24,6 +24,13 @@ function handleGlobalError(error: unknown, isQuery: boolean) {
     toast.error("Session expired, please sign in again");
     return;
   }
+
+  if (isQuery) {
+    // Background queries fail silently — the UI already shows N/A / empty states.
+    // Only surface 4xx query errors (e.g. 403 = no permission to view this resource).
+    if (!(error instanceof ApiError) || error.status >= 500) return;
+  }
+
   const fallback = isQuery ? "Failed to load data" : "Something went wrong";
   toast.error(getApiErrorMessage(error, fallback));
 }
