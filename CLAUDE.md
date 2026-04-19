@@ -45,7 +45,7 @@ The repo uses TypeScript composite projects. Always typecheck from the root (`pn
 
 ### Frontend routing
 
-`stockscreener` uses `wouter`. Routes support a `BASE_URL` / `BASE_PATH` prefix for subdirectory deployments. The production API URL is set in `artifacts/stockscreener/src/main.tsx` via `setBaseUrl()` and `setAuthTokenGetter()` from `@workspace/api-client-react`.
+`stockscreener` uses `wouter`. Routes support a `BASE_URL` / `BASE_PATH` prefix for subdirectory deployments. The production API URL is set in `artifacts/stockscreener/src/main.tsx` via `setBaseUrl()` from `@workspace/api-client-react`.
 
 ## Key environment variables
 

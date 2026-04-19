@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setOnUnauthorized(refreshToken);
     return () => setOnUnauthorized(null);
-  }, []);
+  }, [refreshToken]);
 
   useEffect(() => {
     if (!user) return;
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshToken();
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, refreshToken]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
