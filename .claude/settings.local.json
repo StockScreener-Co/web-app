@@ -35,7 +35,12 @@
       "Bash(rm \"D:\\\\Projects\\\\SS\\\\web-app\\\\lib\\\\api-client-react\\\\tsconfig.tsbuildinfo\")",
       "Bash(rm -rf \"D:\\\\Projects\\\\SS\\\\web-app\\\\lib\\\\api-client-react\\\\dist\")",
       "Bash(cd /d D:/Projects/SS/web-app)",
-      "Bash(grep -n \"double blank line\\\\|^\\\\s*$\" \"D:/Projects/SS/web-app/artifacts/stockscreener/src/pages/home.tsx\")"
+      "Bash(grep -n \"double blank line\\\\|^\\\\s*$\" \"D:/Projects/SS/web-app/artifacts/stockscreener/src/pages/home.tsx\")",
+      "Bash(xargs cat *)",
+      "Bash(grep -E '\\\\.\\(ts|js|go|java|py\\)$')",
+      "Bash(git check-ignore *)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)"
     ]
   }
 }
