@@ -1,20 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { setAuthTokenGetter, setOnUnauthorized, customFetch, setBaseUrl } from "@/lib/api-client";
+import { setOnUnauthorized, customFetch } from "@/lib/api-client";
 
 interface User {
-  id: string;
   email: string;
   fullName: string;
 }
 
 interface UserDto {
-  token: string;
-  refreshToken: string;
-}
-
-interface UserRegistrationRespondDto {
-  id: string;
   email: string;
   fullName: string;
 }
@@ -29,12 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = "tt_token";
-const REFRESH_TOKEN_KEY = "tt_refresh_token";
 const USER_KEY = "tt_user";
-
-// Configure API client
-setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -52,23 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshPromise = useRef<Promise<boolean> | null>(null);
   const [, setLocation] = useLocation();
 
-  // Helper to save tokens and user
-  const saveAuth = (tokens: UserDto, userData?: User) => {
+  const saveAuth = (userData: User) => {
     try {
-      localStorage.setItem(TOKEN_KEY, tokens.token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-      if (userData) {
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
-        setUser(userData);
-      }
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+      setUser(userData);
     } catch (e) {
       console.error("Failed to save auth data:", e);
     }
   };
 
   const clearAuth = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);
   };
@@ -78,28 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return refreshPromise.current || false;
     }
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
-
-    if (!token || !refreshTokenValue) {
-      return false;
-    }
-
     isRefreshing.current = true;
     refreshPromise.current = (async () => {
       try {
-        const res = await customFetch<UserDto>("/api/v1/auth/refresh", {
+        await customFetch("/api/v1/auth/refresh", {
           method: "POST",
-          body: JSON.stringify({ token, refreshToken: refreshTokenValue }), 
         });
-
-        if (res) {
-          saveAuth(res);
-          return true;
-        } else {
-          clearAuth();
-          return false;
-        }
+        return true;
       } catch (err) {
         console.error("Token refresh failed:", err);
         clearAuth();
@@ -113,41 +79,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return refreshPromise.current;
   };
 
-  // Register unauthorized handler
   useEffect(() => {
     setOnUnauthorized(refreshToken);
     return () => setOnUnauthorized(null);
   }, []);
 
-  // Initial check and periodic refresh setup
   useEffect(() => {
+    if (!user) return;
     const interval = setInterval(() => {
-      if (localStorage.getItem(TOKEN_KEY)) {
-        refreshToken();
-      }
-    }, 10 * 60 * 1000); // every 10 mins
-
+      refreshToken();
+    }, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const tokens = await customFetch<UserDto>("/api/v1/auth/login", {
+      const userData = await customFetch<UserDto>("/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-
-      // Since login only returns tokens, we might need another API to get user info 
-      // or we can deduce user info from the JWT if needed. 
-      // For now, let's create a minimal user object based on the email we have.
-      const userData: User = {
-        id: "temp-id", // Usually should come from backend
-        email: email,
-        fullName: email.split("@")[0], // Fallback since login response doesn't have it
-      };
-      
-      saveAuth(tokens, userData);
+      saveAuth(userData);
     } finally {
       setIsLoading(false);
     }
@@ -160,11 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ email, password, repeatPassword, fullName }),
       });
-
-      // Registration returns UserRegistrationRespondDto
-      // The user still needs to login after registration based on the description "after which the user can log in and continue working"
-      // Wait, usually it returns tokens too but here it says user receives UUID, email, fullName and then can login.
-      // So no auto-login here.
     } finally {
       setIsLoading(false);
     }
@@ -172,12 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
-
       await customFetch("/api/v1/auth/logout", {
         method: "POST",
-        body: JSON.stringify({ token, refreshToken: refreshTokenValue }),
       });
     } catch (err) {
       console.error("Logout API call failed:", err);
