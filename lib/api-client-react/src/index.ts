@@ -2,9 +2,8 @@ export * from "./generated/api";
 export * from "./generated/api.schemas";
 export {
   setBaseUrl,
-  setAuthTokenGetter,
   setOnUnauthorized,
   customFetch,
   ApiError,
 } from "./custom-fetch";
-export type { AuthTokenGetter, OnUnauthorized } from "./custom-fetch";
+export type { OnUnauthorized } from "./custom-fetch";
