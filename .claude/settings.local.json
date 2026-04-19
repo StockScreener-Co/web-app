@@ -27,7 +27,15 @@
       "Bash(ls -d worktrees)",
       "Bash(git -C \"D:/Projects/SS/web-app\" add artifacts/stockscreener/src/pages/watchlist.tsx)",
       "Bash(git -C D:/Projects/SS/web-app commit -m ':*)",
-      "Bash(echo \"Exit: $?\")"
+      "Bash(echo \"Exit: $?\")",
+      "Bash(python3 -c \"import yaml; yaml.safe_load\\(open\\('lib/api-spec/openapi.yaml'\\)\\)\")",
+      "Bash(node -e \"const yaml = require\\('js-yaml'\\); const fs = require\\('fs'\\); try { yaml.load\\(fs.readFileSync\\('lib/api-spec/openapi.yaml', 'utf8'\\)\\); console.log\\('YAML is valid'\\); } catch\\(e\\) { console.error\\('YAML error:', e.message\\); process.exit\\(1\\); }\")",
+      "Bash(grep -n \"useSearchInstruments\\\\|useGetMostPopularStocks\" D:/Projects/SS/web-app/lib/api-client-react/src/generated/*.ts)",
+      "Bash(npm ls:*)",
+      "Bash(rm \"D:\\\\Projects\\\\SS\\\\web-app\\\\lib\\\\api-client-react\\\\tsconfig.tsbuildinfo\")",
+      "Bash(rm -rf \"D:\\\\Projects\\\\SS\\\\web-app\\\\lib\\\\api-client-react\\\\dist\")",
+      "Bash(cd /d D:/Projects/SS/web-app)",
+      "Bash(grep -n \"double blank line\\\\|^\\\\s*$\" \"D:/Projects/SS/web-app/artifacts/stockscreener/src/pages/home.tsx\")"
     ]
   }
 }

@@ -1,0 +1,118 @@
+<h2>Дизайн empty state для портфеля</h2>
+<p class="subtitle">3 оригинальных варианта — один концепт, разный подход к компоновке</p>
+
+<div class="cards">
+
+  <!-- Design 1: Card Grid -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f172a;border-radius:10px;padding:24px;font-family:sans-serif;border:1px solid #1e293b">
+        <div style="color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">Add your first holdings</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <!-- Active card -->
+          <div style="background:linear-gradient(135deg,#052e16,#14532d);border:1px solid #16a34a;border-radius:10px;padding:16px;cursor:pointer">
+            <div style="font-size:20px;margin-bottom:8px">✏️</div>
+            <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:4px">Enter manually</div>
+            <div style="color:#86efac;font-size:11px;line-height:1.5">Add transactions one by one</div>
+          </div>
+          <!-- Coming soon cards -->
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px;opacity:.5;cursor:not-allowed;position:relative">
+            <div style="font-size:20px;margin-bottom:8px">🔗</div>
+            <div style="color:#cbd5e1;font-weight:700;font-size:13px;margin-bottom:4px">Brokerage sync</div>
+            <div style="color:#64748b;font-size:11px;line-height:1.5">Connect your account</div>
+            <div style="position:absolute;top:10px;right:10px;background:#334155;color:#94a3b8;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600">SOON</div>
+          </div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px;opacity:.5;cursor:not-allowed;position:relative">
+            <div style="font-size:20px;margin-bottom:8px">📄</div>
+            <div style="color:#cbd5e1;font-weight:700;font-size:13px;margin-bottom:4px">Import CSV</div>
+            <div style="color:#64748b;font-size:11px;line-height:1.5">Upload a statement</div>
+            <div style="position:absolute;top:10px;right:10px;background:#334155;color:#94a3b8;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600">SOON</div>
+          </div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px;opacity:.5;cursor:not-allowed;position:relative">
+            <div style="font-size:20px;margin-bottom:8px">🎮</div>
+            <div style="color:#cbd5e1;font-weight:700;font-size:13px;margin-bottom:4px">Try demo</div>
+            <div style="color:#64748b;font-size:11px;line-height:1.5">Explore with sample data</div>
+            <div style="position:absolute;top:10px;right:10px;background:#334155;color:#94a3b8;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600">SOON</div>
+          </div>
+        </div>
+        <div style="background:#22c55e;color:#000;border-radius:8px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;text-align:center;margin-top:14px">+ Add Transaction</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Card Grid</h3>
+      <p>2×2 карточки. Активная выделена зелёным градиентом, остальные затемнены. CTA внизу.</p>
+    </div>
+  </div>
+
+  <!-- Design 2: Vertical Split -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f172a;border-radius:10px;font-family:sans-serif;border:1px solid #1e293b;display:flex;overflow:hidden;min-height:240px">
+        <!-- Left: primary action -->
+        <div style="flex:1.4;padding:28px 24px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px;border-right:1px solid #1e293b">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;font-size:20px">✏️</div>
+          <div>
+            <div style="color:#f1f5f9;font-weight:700;font-size:15px;margin-bottom:4px">Enter your holdings</div>
+            <div style="color:#64748b;font-size:12px;line-height:1.6;max-width:160px">Add transactions manually and track real P&amp;L from day one.</div>
+          </div>
+          <div style="background:#22c55e;color:#000;border-radius:7px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer">+ Add Transaction</div>
+        </div>
+        <!-- Right: future methods -->
+        <div style="flex:1;padding:20px 16px;display:flex;flex-direction:column;justify-content:center;gap:8px">
+          <div style="color:#475569;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Coming soon</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#1e293b;border-radius:8px;opacity:.6">
+            <span style="font-size:16px">🔗</span>
+            <div style="color:#94a3b8;font-size:12px;font-weight:500">Brokerage sync</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#1e293b;border-radius:8px;opacity:.6">
+            <span style="font-size:16px">📄</span>
+            <div style="color:#94a3b8;font-size:12px;font-weight:500">Import CSV</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#1e293b;border-radius:8px;opacity:.6">
+            <span style="font-size:16px">🎮</span>
+            <div style="color:#94a3b8;font-size:12px;font-weight:500">Try demo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Вертикальный сплит</h3>
+      <p>Левая половина — крупный активный метод с CTA. Правая — список будущих в виде мелких строк.</p>
+    </div>
+  </div>
+
+  <!-- Design 3: Centered Spotlight -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f172a;border-radius:10px;padding:28px 20px;font-family:sans-serif;border:1px solid #1e293b;display:flex;flex-direction:column;align-items:center;gap:0">
+        <!-- Hero -->
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:52px;height:52px;border-radius:16px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">✏️</div>
+          <div style="color:#f1f5f9;font-weight:800;font-size:16px;margin-bottom:6px">Start building your portfolio</div>
+          <div style="color:#64748b;font-size:12px;line-height:1.6;max-width:240px;margin:0 auto">Add your first transaction and watch your P&amp;L come to life.</div>
+          <div style="background:#22c55e;color:#000;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13px;cursor:pointer;display:inline-block;margin-top:14px">+ Add Transaction</div>
+        </div>
+        <!-- Divider -->
+        <div style="width:100%;border-top:1px solid #1e293b;padding-top:16px">
+          <div style="color:#475569;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-bottom:12px">More ways — coming soon</div>
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px;background:#1e293b;border-radius:20px;padding:6px 12px;opacity:.55">
+              <span style="font-size:13px">🔗</span><span style="color:#94a3b8;font-size:11px;font-weight:500">Brokerage sync</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#1e293b;border-radius:20px;padding:6px 12px;opacity:.55">
+              <span style="font-size:13px">📄</span><span style="color:#94a3b8;font-size:11px;font-weight:500">Import CSV</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#1e293b;border-radius:20px;padding:6px 12px;opacity:.55">
+              <span style="font-size:13px">🎮</span><span style="color:#94a3b8;font-size:11px;font-weight:500">Demo portfolio</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Centered Spotlight</h3>
+      <p>Активный метод по центру как герой. Будущие методы — маленькие пилюли-чипы снизу под разделителем.</p>
+    </div>
+  </div>
+
+</div>
