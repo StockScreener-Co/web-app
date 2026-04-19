@@ -1,13 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { setOnUnauthorized, customFetch } from "@/lib/api-client";
 
 interface User {
-  email: string;
-  fullName: string;
-}
-
-interface UserDto {
   email: string;
   fullName: string;
 }
@@ -54,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const refreshToken = async (): Promise<boolean> => {
+  const refreshToken = useCallback(async (): Promise<boolean> => {
     if (isRefreshing.current) {
       return refreshPromise.current || false;
     }
@@ -77,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     return refreshPromise.current;
-  };
+  }, []);
 
   useEffect(() => {
     setOnUnauthorized(refreshToken);
@@ -95,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const userData = await customFetch<UserDto>("/api/v1/auth/login", {
+      const userData = await customFetch<User>("/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
