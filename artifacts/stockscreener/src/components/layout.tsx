@@ -26,7 +26,7 @@ function PortfolioDropdown() {
   const { data: portfolios, isLoading } = useGetMyPortfolios({
     query: {
       enabled: !!user,
-      queryKey: ["/api/v1/portfolios/my", user?.id],
+      queryKey: ["/api/v1/portfolios/my", user?.email],
     },
   });
 

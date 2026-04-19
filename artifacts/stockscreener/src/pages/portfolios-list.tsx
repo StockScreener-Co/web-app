@@ -29,7 +29,7 @@ export default function PortfoliosList() {
   const { data: portfolios, isLoading } = useGetMyPortfolios({
     query: {
       enabled: !!user,
-      queryKey: ["/api/v1/portfolios/my", user?.id],
+      queryKey: ["/api/v1/portfolios/my", user?.email],
     },
   });
 
@@ -37,7 +37,7 @@ export default function PortfoliosList() {
     mutation: {
       onSuccess: () => {
         toast.success("Portfolio deleted successfully");
-        queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user?.email] });
       },
     },
   });

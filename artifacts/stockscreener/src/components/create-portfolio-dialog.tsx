@@ -45,7 +45,7 @@ export function CreatePortfolioDialog({ open, onOpenChange }: CreatePortfolioDia
         toast.success("Portfolio created successfully");
         queryClient.invalidateQueries({ queryKey: getGetMyPortfoliosQueryKey() });
         if (user) {
-          queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user.id] });
+          queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user.email] });
         }
         onOpenChange(false);
         form.reset();
