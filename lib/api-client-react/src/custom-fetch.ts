@@ -6,7 +6,6 @@ export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;
 
-export type AuthTokenGetter = () => Promise<string | null> | string | null;
 export type OnUnauthorized = () => Promise<boolean>;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
@@ -17,7 +16,6 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 // ---------------------------------------------------------------------------
 
 let _baseUrl: string | null = null;
-let _authTokenGetter: AuthTokenGetter | null = null;
 let _onUnauthorized: OnUnauthorized | null = null;
 
 /**
@@ -29,18 +27,6 @@ let _onUnauthorized: OnUnauthorized | null = null;
  */
 export function setBaseUrl(url: string | null): void {
   _baseUrl = url ? url.replace(/\/+$/, "") : null;
-}
-
-/**
- * Register a getter that supplies a bearer auth token.  Before every fetch
- * the getter is invoked; when it returns a non-null string, an
- * `Authorization: Bearer <token>` header is attached to the request.
- *
- * Useful for Expo bundles making token-gated API calls.
- * Pass `null` to clear the getter.
- */
-export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
-  _authTokenGetter = getter;
 }
 
 /**
@@ -363,28 +349,20 @@ export async function customFetch<T = unknown>(
       headers.set("accept", DEFAULT_JSON_ACCEPT);
     }
 
-    // Attach bearer token when an auth getter is configured and no
-    // Authorization header has been explicitly provided.
-    if (_authTokenGetter && !headers.has("authorization")) {
-      const token = await _authTokenGetter();
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-    }
     return headers;
   };
 
   const headers = await prepareHeaders();
   const requestInfo = { method, url: resolveUrl(finalInput) };
 
-  let response = await fetch(finalInput, { ...init, method, headers });
+  let response = await fetch(finalInput, { ...init, method, headers, credentials: "include" });
 
   if (response.status === 401 && _onUnauthorized) {
     const success = await _onUnauthorized();
     if (success) {
       // Retry once with fresh headers (potentially new token)
       const freshHeaders = await prepareHeaders();
-      response = await fetch(finalInput, { ...init, method, headers: freshHeaders });
+      response = await fetch(finalInput, { ...init, method, headers: freshHeaders, credentials: "include" });
     }
   }
 

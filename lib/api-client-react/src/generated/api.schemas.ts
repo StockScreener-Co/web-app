@@ -25,11 +25,16 @@ export interface TransactionRequestDto {
 
 export interface TransactionResponseDto {
   id: string;
+  instrumentId: string;
   quantity: number;
   price: number;
   tradeDate: string;
   operationType: OperationType;
   symbol: string;
+}
+
+export interface DeleteTransactionsRequest {
+  transactionIds: string[];
 }
 
 export interface InstrumentDto {
@@ -109,7 +114,163 @@ export interface InstrumentMostPopularDto {
   isDataComplete: boolean;
 }
 
+export interface CompanyProfileDto {
+  symbol?: string;
+  name?: string;
+  sector?: string;
+  industry?: string;
+  type?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  zip?: string;
+  address?: string;
+  address2?: string;
+  phone?: string;
+  website?: string;
+  exchange?: string;
+  micCode?: string;
+  ceo?: string;
+  employees?: number;
+  description?: string;
+}
+
+export interface InstrumentCurrentPriceDto {
+  symbol?: string;
+  price?: number;
+  currency?: string;
+  todayChange?: MetricCard;
+}
+
+export type InstrumentPageViewDtoKeyStats = {
+  marketCap?: number;
+  peRatio?: number;
+  peTtmRatio?: number;
+  epsTtm?: number;
+  high52W?: number;
+  low52W?: number;
+  volume?: number;
+  dividendYield?: number;
+  beta?: number;
+  revenueTtm?: number;
+  netIncomeTtm?: number;
+};
+
+export type InstrumentPageViewDtoProfileDetails = {
+  description?: string;
+};
+
+export type InstrumentPageViewDtoProfile = {
+  name?: string;
+  details?: InstrumentPageViewDtoProfileDetails;
+};
+
+export interface InstrumentPageViewDto {
+  instrumentId?: string;
+  companyName?: string;
+  currPrice?: InstrumentCurrentPriceDto;
+  keyStats?: InstrumentPageViewDtoKeyStats;
+  profile?: InstrumentPageViewDtoProfile;
+}
+
+export interface NewsDto {
+  id: string;
+  datetime?: string;
+  headline: string;
+  source: string;
+  url: string;
+  image?: string;
+}
+
+export type ChartPeriod = (typeof ChartPeriod)[keyof typeof ChartPeriod];
+
+export const ChartPeriod = {
+  ONE_DAY: "ONE_DAY",
+  FIVE_DAYS: "FIVE_DAYS",
+  ONE_MONTH: "ONE_MONTH",
+  THREE_MONTHS: "THREE_MONTHS",
+  SIX_MONTHS: "SIX_MONTHS",
+  YTD: "YTD",
+  ONE_YEAR: "ONE_YEAR",
+  FIVE_YEARS: "FIVE_YEARS",
+  ALL: "ALL",
+} as const;
+
+export type ChartInterval = (typeof ChartInterval)[keyof typeof ChartInterval];
+
+export const ChartInterval = {
+  ONE_MINUTE: "ONE_MINUTE",
+  TEN_MINUTES: "TEN_MINUTES",
+  ONE_DAY: "ONE_DAY",
+  ONE_WEEK: "ONE_WEEK",
+} as const;
+
+export interface ChartPointDto {
+  timestamp: string;
+  price: number;
+}
+
+export interface PriceHistoryChartResponseDto {
+  symbol?: string;
+  currency?: string;
+  period?: ChartPeriod;
+  interval?: ChartInterval;
+  points?: ChartPointDto[];
+}
+
+export interface WatchlistDto {
+  id: string;
+  name: string;
+  marginOfSafety: number;
+  itemCount: number;
+}
+
+export interface WatchlistRequestDto {
+  /** @maxLength 100 */
+  name: string;
+}
+
+export interface WatchlistUpdateDto {
+  /** @maxLength 100 */
+  name?: string;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  marginOfSafety?: number;
+}
+
+export interface WatchlistItemDto {
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  todayChange: MetricCard;
+  intrinsicValue?: number | null;
+  notes?: string | null;
+}
+
+export interface WatchlistItemUpdateDto {
+  /** Set to a positive number to record intrinsic value. Set to null to clear it. Omitting the field is a no-op.
+   */
+  intrinsicValue?: number | null;
+  /** Set to a string to save a note. Set to null to clear it. Omitting the field is a no-op.
+   */
+  notes?: string | null;
+}
+
+export interface WatchlistDetailsDto {
+  id: string;
+  name: string;
+  marginOfSafety: number;
+  items: WatchlistItemDto[];
+}
+
 export type SearchInstrumentsParams = {
   query: string;
   limit?: number;
+};
+
+export type GetPriceChartForInstrumentParams = {
+  period?: ChartPeriod;
 };

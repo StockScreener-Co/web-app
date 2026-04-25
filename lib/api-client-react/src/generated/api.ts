@@ -17,15 +17,27 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  CompanyProfileDto,
+  DeleteTransactionsRequest,
+  GetPriceChartForInstrumentParams,
   HealthStatus,
   InstrumentDto,
   InstrumentMostPopularDto,
+  InstrumentPageViewDto,
+  NewsDto,
   PortfolioDetailsDto,
   PortfolioDto,
   PortfolioRequestDto,
+  PriceHistoryChartResponseDto,
   SearchInstrumentsParams,
   TransactionRequestDto,
   TransactionResponseDto,
+  WatchlistDetailsDto,
+  WatchlistDto,
+  WatchlistItemDto,
+  WatchlistItemUpdateDto,
+  WatchlistRequestDto,
+  WatchlistUpdateDto,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -597,6 +609,102 @@ export function useGetMostPopularStocks<
 }
 
 /**
+ * @summary List all transactions for a portfolio
+ */
+export const getGetTransactionsForPortfolioUrl = (portfolioId: string) => {
+  return `/api/v1/transactions/portfolio/${portfolioId}`;
+};
+
+export const getTransactionsForPortfolio = async (
+  portfolioId: string,
+  options?: RequestInit,
+): Promise<TransactionResponseDto[]> => {
+  return customFetch<TransactionResponseDto[]>(
+    getGetTransactionsForPortfolioUrl(portfolioId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetTransactionsForPortfolioQueryKey = (portfolioId: string) => {
+  return [`/api/v1/transactions/portfolio/${portfolioId}`] as const;
+};
+
+export const getGetTransactionsForPortfolioQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTransactionsForPortfolio>>,
+  TError = ErrorType<unknown>,
+>(
+  portfolioId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransactionsForPortfolio>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetTransactionsForPortfolioQueryKey(portfolioId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTransactionsForPortfolio>>
+  > = ({ signal }) =>
+    getTransactionsForPortfolio(portfolioId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!portfolioId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTransactionsForPortfolio>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTransactionsForPortfolioQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTransactionsForPortfolio>>
+>;
+export type GetTransactionsForPortfolioQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all transactions for a portfolio
+ */
+
+export function useGetTransactionsForPortfolio<
+  TData = Awaited<ReturnType<typeof getTransactionsForPortfolio>>,
+  TError = ErrorType<unknown>,
+>(
+  portfolioId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransactionsForPortfolio>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTransactionsForPortfolioQueryOptions(
+    portfolioId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Create transaction for portfolio
  */
 export const getCreateTransactionUrl = (portfolioId: string) => {
@@ -685,6 +793,278 @@ export const useCreateTransaction = <
 > => {
   return useMutation(getCreateTransactionMutationOptions(options));
 };
+
+/**
+ * @summary Delete one or more transactions
+ */
+export const getDeleteTransactionsUrl = () => {
+  return `/api/v1/transactions`;
+};
+
+export const deleteTransactions = async (
+  deleteTransactionsRequest: DeleteTransactionsRequest,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTransactionsUrl(), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(deleteTransactionsRequest),
+  });
+};
+
+export const getDeleteTransactionsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTransactions>>,
+    TError,
+    { data: BodyType<DeleteTransactionsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTransactions>>,
+  TError,
+  { data: BodyType<DeleteTransactionsRequest> },
+  TContext
+> => {
+  const mutationKey = ["deleteTransactions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTransactions>>,
+    { data: BodyType<DeleteTransactionsRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return deleteTransactions(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTransactionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTransactions>>
+>;
+export type DeleteTransactionsMutationBody =
+  BodyType<DeleteTransactionsRequest>;
+export type DeleteTransactionsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete one or more transactions
+ */
+export const useDeleteTransactions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTransactions>>,
+    TError,
+    { data: BodyType<DeleteTransactionsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTransactions>>,
+  TError,
+  { data: BodyType<DeleteTransactionsRequest> },
+  TContext
+> => {
+  return useMutation(getDeleteTransactionsMutationOptions(options));
+};
+
+/**
+ * @summary Edit a transaction
+ */
+export const getUpdateTransactionUrl = (transactionId: string) => {
+  return `/api/v1/transactions/${transactionId}`;
+};
+
+export const updateTransaction = async (
+  transactionId: string,
+  transactionRequestDto: TransactionRequestDto,
+  options?: RequestInit,
+): Promise<TransactionResponseDto> => {
+  return customFetch<TransactionResponseDto>(
+    getUpdateTransactionUrl(transactionId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(transactionRequestDto),
+    },
+  );
+};
+
+export const getUpdateTransactionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTransaction>>,
+    TError,
+    { transactionId: string; data: BodyType<TransactionRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTransaction>>,
+  TError,
+  { transactionId: string; data: BodyType<TransactionRequestDto> },
+  TContext
+> => {
+  const mutationKey = ["updateTransaction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTransaction>>,
+    { transactionId: string; data: BodyType<TransactionRequestDto> }
+  > = (props) => {
+    const { transactionId, data } = props ?? {};
+
+    return updateTransaction(transactionId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTransactionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTransaction>>
+>;
+export type UpdateTransactionMutationBody = BodyType<TransactionRequestDto>;
+export type UpdateTransactionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Edit a transaction
+ */
+export const useUpdateTransaction = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTransaction>>,
+    TError,
+    { transactionId: string; data: BodyType<TransactionRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTransaction>>,
+  TError,
+  { transactionId: string; data: BodyType<TransactionRequestDto> },
+  TContext
+> => {
+  return useMutation(getUpdateTransactionMutationOptions(options));
+};
+
+/**
+ * @summary Get company profile for an instrument
+ */
+export const getGetInstrumentProfileUrl = (instrumentId: string) => {
+  return `/api/v1/instruments/${instrumentId}/profile`;
+};
+
+export const getInstrumentProfile = async (
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<CompanyProfileDto> => {
+  return customFetch<CompanyProfileDto>(
+    getGetInstrumentProfileUrl(instrumentId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetInstrumentProfileQueryKey = (instrumentId: string) => {
+  return [`/api/v1/instruments/${instrumentId}/profile`] as const;
+};
+
+export const getGetInstrumentProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInstrumentProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetInstrumentProfileQueryKey(instrumentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getInstrumentProfile>>
+  > = ({ signal }) =>
+    getInstrumentProfile(instrumentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instrumentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInstrumentProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInstrumentProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInstrumentProfile>>
+>;
+export type GetInstrumentProfileQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get company profile for an instrument
+ */
+
+export function useGetInstrumentProfile<
+  TData = Awaited<ReturnType<typeof getInstrumentProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInstrumentProfileQueryOptions(
+    instrumentId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Search instruments
@@ -782,3 +1162,1011 @@ export function useSearchInstruments<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get instrument page view
+ */
+export const getGetInstrumentByIdUrl = (instrumentId: string) => {
+  return `/api/v1/instruments/${instrumentId}`;
+};
+
+export const getInstrumentById = async (
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<InstrumentPageViewDto> => {
+  return customFetch<InstrumentPageViewDto>(
+    getGetInstrumentByIdUrl(instrumentId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetInstrumentByIdQueryKey = (instrumentId: string) => {
+  return [`/api/v1/instruments/${instrumentId}`] as const;
+};
+
+export const getGetInstrumentByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInstrumentById>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetInstrumentByIdQueryKey(instrumentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getInstrumentById>>
+  > = ({ signal }) =>
+    getInstrumentById(instrumentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instrumentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInstrumentById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInstrumentByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInstrumentById>>
+>;
+export type GetInstrumentByIdQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get instrument page view
+ */
+
+export function useGetInstrumentById<
+  TData = Awaited<ReturnType<typeof getInstrumentById>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInstrumentById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInstrumentByIdQueryOptions(instrumentId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get latest news for instrument
+ */
+export const getGetNewsForInstrumentUrl = (instrumentId: string) => {
+  return `/api/v1/news/instrument/${instrumentId}`;
+};
+
+export const getNewsForInstrument = async (
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<NewsDto[]> => {
+  return customFetch<NewsDto[]>(getGetNewsForInstrumentUrl(instrumentId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNewsForInstrumentQueryKey = (instrumentId: string) => {
+  return [`/api/v1/news/instrument/${instrumentId}`] as const;
+};
+
+export const getGetNewsForInstrumentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNewsForInstrument>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewsForInstrument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetNewsForInstrumentQueryKey(instrumentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getNewsForInstrument>>
+  > = ({ signal }) =>
+    getNewsForInstrument(instrumentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instrumentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNewsForInstrument>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNewsForInstrumentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNewsForInstrument>>
+>;
+export type GetNewsForInstrumentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get latest news for instrument
+ */
+
+export function useGetNewsForInstrument<
+  TData = Awaited<ReturnType<typeof getNewsForInstrument>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewsForInstrument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNewsForInstrumentQueryOptions(
+    instrumentId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get price chart for instrument
+ */
+export const getGetPriceChartForInstrumentUrl = (
+  instrumentId: string,
+  params?: GetPriceChartForInstrumentParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prices/price-chart/instrument/${instrumentId}?${stringifiedParams}`
+    : `/api/v1/prices/price-chart/instrument/${instrumentId}`;
+};
+
+export const getPriceChartForInstrument = async (
+  instrumentId: string,
+  params?: GetPriceChartForInstrumentParams,
+  options?: RequestInit,
+): Promise<PriceHistoryChartResponseDto> => {
+  return customFetch<PriceHistoryChartResponseDto>(
+    getGetPriceChartForInstrumentUrl(instrumentId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetPriceChartForInstrumentQueryKey = (
+  instrumentId: string,
+  params?: GetPriceChartForInstrumentParams,
+) => {
+  return [
+    `/api/v1/prices/price-chart/instrument/${instrumentId}`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetPriceChartForInstrumentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPriceChartForInstrument>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  params?: GetPriceChartForInstrumentParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPriceChartForInstrument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetPriceChartForInstrumentQueryKey(instrumentId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPriceChartForInstrument>>
+  > = ({ signal }) =>
+    getPriceChartForInstrument(instrumentId, params, {
+      signal,
+      ...requestOptions,
+    });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instrumentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPriceChartForInstrument>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPriceChartForInstrumentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPriceChartForInstrument>>
+>;
+export type GetPriceChartForInstrumentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get price chart for instrument
+ */
+
+export function useGetPriceChartForInstrument<
+  TData = Awaited<ReturnType<typeof getPriceChartForInstrument>>,
+  TError = ErrorType<unknown>,
+>(
+  instrumentId: string,
+  params?: GetPriceChartForInstrumentParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPriceChartForInstrument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPriceChartForInstrumentQueryOptions(
+    instrumentId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all watchlists for current user
+ */
+export const getGetWatchlistsUrl = () => {
+  return `/api/v1/watchlists`;
+};
+
+export const getWatchlists = async (
+  options?: RequestInit,
+): Promise<WatchlistDto[]> => {
+  return customFetch<WatchlistDto[]>(getGetWatchlistsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWatchlistsQueryKey = () => {
+  return [`/api/v1/watchlists`] as const;
+};
+
+export const getGetWatchlistsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWatchlists>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWatchlists>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWatchlistsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWatchlists>>> = ({
+    signal,
+  }) => getWatchlists({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWatchlists>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWatchlistsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWatchlists>>
+>;
+export type GetWatchlistsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all watchlists for current user
+ */
+
+export function useGetWatchlists<
+  TData = Awaited<ReturnType<typeof getWatchlists>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWatchlists>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWatchlistsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a watchlist
+ */
+export const getCreateWatchlistUrl = () => {
+  return `/api/v1/watchlists`;
+};
+
+export const createWatchlist = async (
+  watchlistRequestDto: WatchlistRequestDto,
+  options?: RequestInit,
+): Promise<WatchlistDto> => {
+  return customFetch<WatchlistDto>(getCreateWatchlistUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(watchlistRequestDto),
+  });
+};
+
+export const getCreateWatchlistMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWatchlist>>,
+    TError,
+    { data: BodyType<WatchlistRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWatchlist>>,
+  TError,
+  { data: BodyType<WatchlistRequestDto> },
+  TContext
+> => {
+  const mutationKey = ["createWatchlist"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWatchlist>>,
+    { data: BodyType<WatchlistRequestDto> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWatchlist(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWatchlistMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWatchlist>>
+>;
+export type CreateWatchlistMutationBody = BodyType<WatchlistRequestDto>;
+export type CreateWatchlistMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a watchlist
+ */
+export const useCreateWatchlist = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWatchlist>>,
+    TError,
+    { data: BodyType<WatchlistRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWatchlist>>,
+  TError,
+  { data: BodyType<WatchlistRequestDto> },
+  TContext
+> => {
+  return useMutation(getCreateWatchlistMutationOptions(options));
+};
+
+/**
+ * @summary Get watchlist detail with items
+ */
+export const getGetWatchlistByIdUrl = (id: string) => {
+  return `/api/v1/watchlists/${id}`;
+};
+
+export const getWatchlistById = async (
+  id: string,
+  options?: RequestInit,
+): Promise<WatchlistDetailsDto> => {
+  return customFetch<WatchlistDetailsDto>(getGetWatchlistByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWatchlistByIdQueryKey = (id: string) => {
+  return [`/api/v1/watchlists/${id}`] as const;
+};
+
+export const getGetWatchlistByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWatchlistById>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWatchlistById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWatchlistByIdQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWatchlistById>>
+  > = ({ signal }) => getWatchlistById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWatchlistById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWatchlistByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWatchlistById>>
+>;
+export type GetWatchlistByIdQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get watchlist detail with items
+ */
+
+export function useGetWatchlistById<
+  TData = Awaited<ReturnType<typeof getWatchlistById>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWatchlistById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWatchlistByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update watchlist name or margin of safety
+ */
+export const getUpdateWatchlistUrl = (id: string) => {
+  return `/api/v1/watchlists/${id}`;
+};
+
+export const updateWatchlist = async (
+  id: string,
+  watchlistUpdateDto: WatchlistUpdateDto,
+  options?: RequestInit,
+): Promise<WatchlistDto> => {
+  return customFetch<WatchlistDto>(getUpdateWatchlistUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(watchlistUpdateDto),
+  });
+};
+
+export const getUpdateWatchlistMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWatchlist>>,
+    TError,
+    { id: string; data: BodyType<WatchlistUpdateDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateWatchlist>>,
+  TError,
+  { id: string; data: BodyType<WatchlistUpdateDto> },
+  TContext
+> => {
+  const mutationKey = ["updateWatchlist"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateWatchlist>>,
+    { id: string; data: BodyType<WatchlistUpdateDto> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateWatchlist(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateWatchlistMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateWatchlist>>
+>;
+export type UpdateWatchlistMutationBody = BodyType<WatchlistUpdateDto>;
+export type UpdateWatchlistMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update watchlist name or margin of safety
+ */
+export const useUpdateWatchlist = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWatchlist>>,
+    TError,
+    { id: string; data: BodyType<WatchlistUpdateDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateWatchlist>>,
+  TError,
+  { id: string; data: BodyType<WatchlistUpdateDto> },
+  TContext
+> => {
+  return useMutation(getUpdateWatchlistMutationOptions(options));
+};
+
+/**
+ * @summary Delete a watchlist
+ */
+export const getDeleteWatchlistUrl = (id: string) => {
+  return `/api/v1/watchlists/${id}`;
+};
+
+export const deleteWatchlist = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteWatchlistUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteWatchlistMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWatchlist>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteWatchlist>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteWatchlist"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteWatchlist>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteWatchlist(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteWatchlistMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteWatchlist>>
+>;
+
+export type DeleteWatchlistMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a watchlist
+ */
+export const useDeleteWatchlist = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWatchlist>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteWatchlist>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteWatchlistMutationOptions(options));
+};
+
+/**
+ * @summary Add an instrument to a watchlist
+ */
+export const getAddInstrumentToWatchlistUrl = (
+  id: string,
+  instrumentId: string,
+) => {
+  return `/api/v1/watchlists/${id}/instruments/${instrumentId}`;
+};
+
+export const addInstrumentToWatchlist = async (
+  id: string,
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<WatchlistItemDto> => {
+  return customFetch<WatchlistItemDto>(
+    getAddInstrumentToWatchlistUrl(id, instrumentId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getAddInstrumentToWatchlistMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addInstrumentToWatchlist>>,
+    TError,
+    { id: string; instrumentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addInstrumentToWatchlist>>,
+  TError,
+  { id: string; instrumentId: string },
+  TContext
+> => {
+  const mutationKey = ["addInstrumentToWatchlist"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addInstrumentToWatchlist>>,
+    { id: string; instrumentId: string }
+  > = (props) => {
+    const { id, instrumentId } = props ?? {};
+
+    return addInstrumentToWatchlist(id, instrumentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddInstrumentToWatchlistMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addInstrumentToWatchlist>>
+>;
+
+export type AddInstrumentToWatchlistMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add an instrument to a watchlist
+ */
+export const useAddInstrumentToWatchlist = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addInstrumentToWatchlist>>,
+    TError,
+    { id: string; instrumentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addInstrumentToWatchlist>>,
+  TError,
+  { id: string; instrumentId: string },
+  TContext
+> => {
+  return useMutation(getAddInstrumentToWatchlistMutationOptions(options));
+};
+
+/**
+ * @summary Update intrinsic value for a watchlist item
+ */
+export const getUpdateWatchlistItemUrl = (id: string, instrumentId: string) => {
+  return `/api/v1/watchlists/${id}/instruments/${instrumentId}`;
+};
+
+export const updateWatchlistItem = async (
+  id: string,
+  instrumentId: string,
+  watchlistItemUpdateDto: WatchlistItemUpdateDto,
+  options?: RequestInit,
+): Promise<WatchlistItemDto> => {
+  return customFetch<WatchlistItemDto>(
+    getUpdateWatchlistItemUrl(id, instrumentId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(watchlistItemUpdateDto),
+    },
+  );
+};
+
+export const getUpdateWatchlistItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWatchlistItem>>,
+    TError,
+    {
+      id: string;
+      instrumentId: string;
+      data: BodyType<WatchlistItemUpdateDto>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateWatchlistItem>>,
+  TError,
+  { id: string; instrumentId: string; data: BodyType<WatchlistItemUpdateDto> },
+  TContext
+> => {
+  const mutationKey = ["updateWatchlistItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateWatchlistItem>>,
+    { id: string; instrumentId: string; data: BodyType<WatchlistItemUpdateDto> }
+  > = (props) => {
+    const { id, instrumentId, data } = props ?? {};
+
+    return updateWatchlistItem(id, instrumentId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateWatchlistItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateWatchlistItem>>
+>;
+export type UpdateWatchlistItemMutationBody = BodyType<WatchlistItemUpdateDto>;
+export type UpdateWatchlistItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update intrinsic value for a watchlist item
+ */
+export const useUpdateWatchlistItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWatchlistItem>>,
+    TError,
+    {
+      id: string;
+      instrumentId: string;
+      data: BodyType<WatchlistItemUpdateDto>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateWatchlistItem>>,
+  TError,
+  { id: string; instrumentId: string; data: BodyType<WatchlistItemUpdateDto> },
+  TContext
+> => {
+  return useMutation(getUpdateWatchlistItemMutationOptions(options));
+};
+
+/**
+ * @summary Remove an instrument from a watchlist
+ */
+export const getRemoveInstrumentFromWatchlistUrl = (
+  id: string,
+  instrumentId: string,
+) => {
+  return `/api/v1/watchlists/${id}/instruments/${instrumentId}`;
+};
+
+export const removeInstrumentFromWatchlist = async (
+  id: string,
+  instrumentId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(
+    getRemoveInstrumentFromWatchlistUrl(id, instrumentId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getRemoveInstrumentFromWatchlistMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>,
+    TError,
+    { id: string; instrumentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>,
+  TError,
+  { id: string; instrumentId: string },
+  TContext
+> => {
+  const mutationKey = ["removeInstrumentFromWatchlist"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>,
+    { id: string; instrumentId: string }
+  > = (props) => {
+    const { id, instrumentId } = props ?? {};
+
+    return removeInstrumentFromWatchlist(id, instrumentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveInstrumentFromWatchlistMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>
+>;
+
+export type RemoveInstrumentFromWatchlistMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove an instrument from a watchlist
+ */
+export const useRemoveInstrumentFromWatchlist = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>,
+    TError,
+    { id: string; instrumentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeInstrumentFromWatchlist>>,
+  TError,
+  { id: string; instrumentId: string },
+  TContext
+> => {
+  return useMutation(getRemoveInstrumentFromWatchlistMutationOptions(options));
+};
