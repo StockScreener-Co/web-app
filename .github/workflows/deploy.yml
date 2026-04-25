@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
@@ -29,7 +33,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build StockScreener
         # Мы заходим именно в папку фронтенда и запускаем сборку там
