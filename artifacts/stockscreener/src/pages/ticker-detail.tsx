@@ -93,6 +93,7 @@ export default function TickerDetail() {
       price: currPrice?.price ?? 0,
       change: currPrice?.todayChange?.value ?? 0,
       changePercent: currPrice?.todayChange?.ratio ?? 0,
+      changeTrend: currPrice?.todayChange?.trend,
       currency: currPrice?.currency ?? "USD",
       about: instrumentData.profile?.details?.description ?? "",
       marketCap: keyStats.marketCap?.toLocaleString() ?? "N/A",
@@ -144,7 +145,9 @@ export default function TickerDetail() {
     );
   }
 
-  const isPositive = ticker.change >= 0;
+  const isPositive = ticker.changeTrend
+    ? ticker.changeTrend.toUpperCase() !== "DOWN"
+    : ticker.change >= 0;
   const chartColor = ticker.price > 0 ? (isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))') : 'hsl(var(--primary))';
 
   const handleAddPosition = async (e: React.FormEvent) => {
