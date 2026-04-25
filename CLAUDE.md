@@ -86,7 +86,7 @@ Cookie-based auth via HttpOnly cookies. `customFetch` always sends `credentials:
 ### Production API
 
 Set via `setBaseUrl()` in `artifacts/stockscreener/src/main.tsx`:
-- Default: `https://core-production-bdad.up.railway.app`
+- Default: `https://core-production-3d7a.up.railway.app`
 - Override with `VITE_API_URL` env var.
 
 ## Key environment variables

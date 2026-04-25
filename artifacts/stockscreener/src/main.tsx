@@ -5,7 +5,7 @@ import { setBaseUrl } from "@/lib/api-client";
 
 // Set base URL for API calls in production
 if (import.meta.env.PROD) {
-  setBaseUrl(import.meta.env.VITE_API_URL || "https://core-production-bdad.up.railway.app");
+  setBaseUrl(import.meta.env.VITE_API_URL || "https://core-production-3d7a.up.railway.app");
 }
 
 window.addEventListener("error", (event) => {
