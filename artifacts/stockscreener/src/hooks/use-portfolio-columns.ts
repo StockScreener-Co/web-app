@@ -1,53 +1,55 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useGetPortfolioColumns } from "@/lib/api-client";
 
-export const ALL_COLUMNS = [
-  { id: "asset" as const, label: "Symbol / Name", locked: true },
-  { id: "currentPrice" as const, label: "Current Price", locked: false },
-  { id: "qty" as const, label: "Qty", locked: false },
-  { id: "avgPrice" as const, label: "Avg Price", locked: false },
-  { id: "value" as const, label: "Value", locked: false },
-  { id: "todayPL" as const, label: "Today P&L $", locked: false },
-  { id: "todayPLPct" as const, label: "Today P&L %", locked: false },
-  { id: "totalPL" as const, label: "Total P&L $", locked: false },
-  { id: "totalPLPct" as const, label: "Total P&L %", locked: false },
-  { id: "weight" as const, label: "Portfolio Weight %", locked: false },
-];
-
-export type ColumnId = (typeof ALL_COLUMNS)[number]["id"];
-
-const DEFAULT_VISIBLE: ColumnId[] = [
-  "asset",
-  "currentPrice",
-  "qty",
-  "avgPrice",
-  "value",
-  "todayPL",
-  "totalPL",
-];
 const STORAGE_KEY = "ss-portfolio-columns";
 
 export function usePortfolioColumns() {
-  const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return DEFAULT_VISIBLE;
-      const parsed: unknown = JSON.parse(stored);
-      return Array.isArray(parsed) ? (parsed as ColumnId[]) : DEFAULT_VISIBLE;
-    } catch {
-      return DEFAULT_VISIBLE;
-    }
-  });
+  const { data: serverColumns, isLoading } = useGetPortfolioColumns();
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
-  }, [visibleColumns]);
+    if (!serverColumns || serverColumns.length === 0) return;
 
-  function toggleColumn(id: ColumnId) {
-    if (id === "asset") return;
+    const stored = (() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as string[]) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    const serverKeys = new Set(serverColumns.map((c) => c.key));
+
+    if (stored) {
+      setVisibleColumns(stored.filter((k) => serverKeys.has(k)));
+    } else {
+      setVisibleColumns(serverColumns.filter((c) => c.isDefault).map((c) => c.key));
+    }
+
+    setInitialized(true);
+  }, [serverColumns]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+  }, [visibleColumns, initialized]);
+
+  function toggleColumn(key: string) {
+    const col = serverColumns?.find((c) => c.key === key);
+    if (!col || col.isLocked) return;
     setVisibleColumns((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   }
 
-  return { visibleColumns, toggleColumn, allColumns: ALL_COLUMNS };
+  return {
+    allColumns: serverColumns ?? [],
+    visibleColumns,
+    toggleColumn,
+    isLoading,
+  };
 }
