@@ -187,6 +187,9 @@ export default function Portfolio() {
       queryClient.invalidateQueries({
         queryKey: [`/api/v1/transactions/portfolio/${currentPortfolioId}`],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/v1/portfolios", currentPortfolioId],
+      });
 
       setShowAdd(false);
       setEditingTx(null);
@@ -636,7 +639,7 @@ export default function Portfolio() {
                     <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
                       <th className="p-4 pl-6 font-semibold">Asset</th>
                       {allColumns
-                        .filter((col) => col.key !== "symbol" && visibleColumns.includes(col.key))
+                        .filter((col) => !col.isLocked && visibleColumns.includes(col.key))
                         .map((col) => (
                           <th key={col.key} className="p-4 font-semibold text-right">
                             {col.label}
@@ -669,7 +672,7 @@ export default function Portfolio() {
                           </td>
 
                           {allColumns
-                            .filter((col) => col.key !== "symbol" && visibleColumns.includes(col.key))
+                            .filter((col) => !col.isLocked && visibleColumns.includes(col.key))
                             .map((col) => renderCell(asset, col.key))}
                         </motion.tr>
                       ))}
