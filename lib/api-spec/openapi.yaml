@@ -69,6 +69,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PortfolioDto"
+  /v1/portfolios/columns:
+    get:
+      operationId: getPortfolioColumns
+      tags: [portfolios]
+      summary: Get available portfolio columns
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortfolioColumnDto"
   /v1/portfolios/{id}:
     get:
       operationId: getPortfolioById
@@ -81,6 +95,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: columns
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated column keys to include in assets (e.g. "currentPrice,qty,value")
       responses:
         "200":
           description: Successful response
@@ -619,13 +639,6 @@ components:
         - instrumentId
         - symbol
         - name
-        - qty
-        - avgPrice
-        - weight
-        - value
-        - currentPrice
-        - unrealizedPL
-        - todayChange
     PortfolioRequestDto:
       type: object
       properties:
@@ -634,6 +647,22 @@ components:
           maxLength: 100
       required:
         - name
+    PortfolioColumnDto:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        isDefault:
+          type: boolean
+        isLocked:
+          type: boolean
+      required:
+        - key
+        - label
+        - isDefault
+        - isLocked
     InstrumentMostPopularDto:
       type: object
       properties:
