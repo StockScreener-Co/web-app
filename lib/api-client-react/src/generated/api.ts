@@ -19,12 +19,14 @@ import type {
 import type {
   CompanyProfileDto,
   DeleteTransactionsRequest,
+  GetPortfolioByIdParams,
   GetPriceChartForInstrumentParams,
   HealthStatus,
   InstrumentDto,
   InstrumentMostPopularDto,
   InstrumentPageViewDto,
   NewsDto,
+  PortfolioColumnDto,
   PortfolioDetailsDto,
   PortfolioDto,
   PortfolioRequestDto,
@@ -362,24 +364,118 @@ export function useGetMyPortfolios<
 }
 
 /**
- * @summary Get portfolio by id
+ * @summary Get available portfolio columns
  */
-export const getGetPortfolioByIdUrl = (id: string) => {
-  return `/api/v1/portfolios/${id}`;
+export const getGetPortfolioColumnsUrl = () => {
+  return `/api/v1/portfolios/columns`;
 };
 
-export const getPortfolioById = async (
-  id: string,
+export const getPortfolioColumns = async (
   options?: RequestInit,
-): Promise<PortfolioDetailsDto> => {
-  return customFetch<PortfolioDetailsDto>(getGetPortfolioByIdUrl(id), {
+): Promise<PortfolioColumnDto[]> => {
+  return customFetch<PortfolioColumnDto[]>(getGetPortfolioColumnsUrl(), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetPortfolioByIdQueryKey = (id: string) => {
-  return [`/api/v1/portfolios/${id}`] as const;
+export const getGetPortfolioColumnsQueryKey = () => {
+  return [`/api/v1/portfolios/columns`] as const;
+};
+
+export const getGetPortfolioColumnsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPortfolioColumns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPortfolioColumns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPortfolioColumnsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPortfolioColumns>>
+  > = ({ signal }) => getPortfolioColumns({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPortfolioColumns>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPortfolioColumnsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPortfolioColumns>>
+>;
+export type GetPortfolioColumnsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get available portfolio columns
+ */
+
+export function useGetPortfolioColumns<
+  TData = Awaited<ReturnType<typeof getPortfolioColumns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPortfolioColumns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPortfolioColumnsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get portfolio by id
+ */
+export const getGetPortfolioByIdUrl = (
+  id: string,
+  params?: GetPortfolioByIdParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/portfolios/${id}?${stringifiedParams}`
+    : `/api/v1/portfolios/${id}`;
+};
+
+export const getPortfolioById = async (
+  id: string,
+  params?: GetPortfolioByIdParams,
+  options?: RequestInit,
+): Promise<PortfolioDetailsDto> => {
+  return customFetch<PortfolioDetailsDto>(getGetPortfolioByIdUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPortfolioByIdQueryKey = (
+  id: string,
+  params?: GetPortfolioByIdParams,
+) => {
+  return [`/api/v1/portfolios/${id}`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetPortfolioByIdQueryOptions = <
@@ -387,6 +483,7 @@ export const getGetPortfolioByIdQueryOptions = <
   TError = ErrorType<unknown>,
 >(
   id: string,
+  params?: GetPortfolioByIdParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof getPortfolioById>>,
@@ -398,11 +495,13 @@ export const getGetPortfolioByIdQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetPortfolioByIdQueryKey(id);
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPortfolioByIdQueryKey(id, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getPortfolioById>>
-  > = ({ signal }) => getPortfolioById(id, { signal, ...requestOptions });
+  > = ({ signal }) =>
+    getPortfolioById(id, params, { signal, ...requestOptions });
 
   return {
     queryKey,
@@ -430,6 +529,7 @@ export function useGetPortfolioById<
   TError = ErrorType<unknown>,
 >(
   id: string,
+  params?: GetPortfolioByIdParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof getPortfolioById>>,
@@ -439,7 +539,7 @@ export function useGetPortfolioById<
     request?: SecondParameter<typeof customFetch>;
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPortfolioByIdQueryOptions(id, options);
+  const queryOptions = getGetPortfolioByIdQueryOptions(id, params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

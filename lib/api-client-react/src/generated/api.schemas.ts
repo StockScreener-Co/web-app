@@ -74,13 +74,13 @@ export interface AssetDto {
   instrumentId: string;
   symbol: string;
   name: string;
-  qty: number;
-  avgPrice: number;
-  weight: number;
-  value: number;
-  currentPrice: number;
-  unrealizedPL: MetricCard;
-  todayChange: MetricCard;
+  qty?: number;
+  avgPrice?: number;
+  weight?: number;
+  value?: number;
+  currentPrice?: number;
+  unrealizedPL?: MetricCard;
+  todayChange?: MetricCard;
 }
 
 export interface PortfolioDetailsDto {
@@ -92,6 +92,13 @@ export interface PortfolioDetailsDto {
 export interface PortfolioRequestDto {
   /** @maxLength 100 */
   name: string;
+}
+
+export interface PortfolioColumnDto {
+  key: string;
+  label: string;
+  isDefault: boolean;
+  isLocked: boolean;
 }
 
 export interface MetricCardOld {
@@ -265,6 +272,13 @@ export interface WatchlistDetailsDto {
   marginOfSafety: number;
   items: WatchlistItemDto[];
 }
+
+export type GetPortfolioByIdParams = {
+  /**
+   * Comma-separated column keys to include in assets (e.g. "currentPrice,qty,value")
+   */
+  columns?: string;
+};
 
 export type SearchInstrumentsParams = {
   query: string;
