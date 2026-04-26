@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Columns3, Pencil, Trash2 } from "lucide-react";
-import { usePortfolioColumns, type ColumnId } from "@/hooks/use-portfolio-columns";
+import { usePortfolioColumns } from "@/hooks/use-portfolio-columns";
 import {
   useGetPortfolioById,
   useCreateTransaction,
@@ -70,12 +70,20 @@ export default function Portfolio() {
     }
   }, [user, currentPortfolioId, lastPortfolioId, updateLastPortfolioId, setLocation]);
 
-  const { data: portfolio, isLoading } = useGetPortfolioById(currentPortfolioId!, {
-    query: {
-      enabled: !!user && !!currentPortfolioId,
-      queryKey: ["/api/v1/portfolios", currentPortfolioId],
-    },
-  });
+  const { visibleColumns, toggleColumn, allColumns, isLoading: isColumnsLoading } = usePortfolioColumns();
+
+  const columnsParam = [...visibleColumns].sort().join(",");
+
+  const { data: portfolio, isLoading } = useGetPortfolioById(
+    currentPortfolioId!,
+    { columns: columnsParam },
+    {
+      query: {
+        enabled: !!user && !!currentPortfolioId && visibleColumns.length > 0,
+        queryKey: ["/api/v1/portfolios", currentPortfolioId, columnsParam],
+      },
+    }
+  );
 
   const { data: searchResults, isLoading: isSearching } = useSearchInstruments({
     query: searchTerm,
@@ -90,7 +98,6 @@ export default function Portfolio() {
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransactions = useDeleteTransactions();
-  const { visibleColumns, toggleColumn, allColumns } = usePortfolioColumns();
 
   const { data: transactions, isLoading: isTransactionsLoading } = useGetTransactionsForPortfolio(
     currentPortfolioId!,
@@ -232,14 +239,14 @@ export default function Portfolio() {
 
   const aggregates = useMemo(() => {
     if (!assets.length) return null;
-    const totalValue = assets.reduce((s, a) => s + a.value, 0);
-    const todayPLDollar = assets.reduce((s, a) => s + a.todayChange.value, 0);
+    const totalValue = assets.reduce((s, a) => s + (a.value ?? 0), 0);
+    const todayPLDollar = assets.reduce((s, a) => s + (a.todayChange?.value ?? 0), 0);
     const todayPLPct =
       totalValue - todayPLDollar !== 0
         ? (todayPLDollar / (totalValue - todayPLDollar)) * 100
         : 0;
-    const totalPLDollar = assets.reduce((s, a) => s + a.unrealizedPL.value, 0);
-    const totalCost = assets.reduce((s, a) => s + a.qty * a.avgPrice, 0);
+    const totalPLDollar = assets.reduce((s, a) => s + (a.unrealizedPL?.value ?? 0), 0);
+    const totalCost = assets.reduce((s, a) => s + (a.qty ?? 0) * (a.avgPrice ?? 0), 0);
     const totalPLPct = totalCost > 0 ? (totalPLDollar / totalCost) * 100 : 0;
     return {
       totalValue,
@@ -274,7 +281,7 @@ export default function Portfolio() {
     );
   }
 
-  if (isLoading) {
+  if (isColumnsLoading || isLoading) {
     return <div className="p-12 text-center">Loading portfolio details...</div>;
   }
 
@@ -282,6 +289,74 @@ export default function Portfolio() {
     !!transactions && transactions.length > 0 &&
     selectedTxIds.size === transactions.length;
   const someTxSelected = selectedTxIds.size > 0 && !allTxSelected;
+
+  function colorByTrend(trend: string | undefined) {
+    if (trend === "UP") return "text-green-400";
+    if (trend === "DOWN") return "text-destructive";
+    return "text-muted-foreground";
+  }
+
+  function renderCell(asset: (typeof assets)[number], key: string) {
+    switch (key) {
+      case "currentPrice":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className="font-semibold">{fmt(asset.currentPrice ?? 0)}</div>
+            <div className={`text-xs ${colorByTrend(asset.todayChange?.trend)}`}>
+              {asset.todayChange?.ratio?.toFixed(2) ?? "0.00"}% 1D
+            </div>
+          </td>
+        );
+      case "qty":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className="font-semibold">{(asset.qty ?? 0).toFixed(4)}</div>
+          </td>
+        );
+      case "avgPrice":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className="font-semibold">{fmt(asset.avgPrice ?? 0)}</div>
+          </td>
+        );
+      case "value":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className="font-semibold">{fmt(asset.value ?? 0)}</div>
+          </td>
+        );
+      case "todayChange":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className={`font-semibold ${colorByTrend(asset.todayChange?.trend)}`}>
+              {fmt(asset.todayChange?.value ?? 0)}
+            </div>
+            <div className={`text-xs ${colorByTrend(asset.todayChange?.trend)}`}>
+              {fmtPct(asset.todayChange?.ratio ?? 0)}
+            </div>
+          </td>
+        );
+      case "unrealizedPL":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className={`font-semibold ${colorByTrend(asset.unrealizedPL?.trend)}`}>
+              {fmt(asset.unrealizedPL?.value ?? 0)}
+            </div>
+            <div className={`text-xs ${colorByTrend(asset.unrealizedPL?.trend)}`}>
+              {fmtPct(asset.unrealizedPL?.ratio ?? 0)}
+            </div>
+          </td>
+        );
+      case "weight":
+        return (
+          <td key={key} className="p-4 text-right">
+            <div className="font-semibold">{((asset.weight ?? 0) * 100).toFixed(1)}%</div>
+          </td>
+        );
+      default:
+        return null;
+    }
+  }
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-12">
@@ -535,16 +610,16 @@ export default function Portfolio() {
                   </p>
                   <div className="space-y-2">
                     {allColumns.map((col) => (
-                      <div key={col.id} className="flex items-center gap-2">
+                      <div key={col.key} className="flex items-center gap-2">
                         <Checkbox
-                          id={`col-${col.id}`}
-                          checked={visibleColumns.includes(col.id as ColumnId)}
-                          disabled={col.locked}
-                          onCheckedChange={() => toggleColumn(col.id as ColumnId)}
+                          id={`col-${col.key}`}
+                          checked={visibleColumns.includes(col.key)}
+                          disabled={col.isLocked}
+                          onCheckedChange={() => toggleColumn(col.key)}
                         />
                         <label
-                          htmlFor={`col-${col.id}`}
-                          className={`text-sm ${col.locked ? "text-muted-foreground" : "cursor-pointer"}`}
+                          htmlFor={`col-${col.key}`}
+                          className={`text-sm ${col.isLocked ? "text-muted-foreground" : "cursor-pointer"}`}
                         >
                           {col.label}
                         </label>
@@ -560,15 +635,13 @@ export default function Portfolio() {
                   <thead>
                     <tr className="bg-secondary/50 border-b border-border/50 text-sm font-medium text-muted-foreground">
                       <th className="p-4 pl-6 font-semibold">Asset</th>
-                      {visibleColumns.includes("currentPrice") && <th className="p-4 font-semibold text-right">Current Price</th>}
-                      {visibleColumns.includes("qty") && <th className="p-4 font-semibold text-right">Qty</th>}
-                      {visibleColumns.includes("avgPrice") && <th className="p-4 font-semibold text-right">Avg Price</th>}
-                      {visibleColumns.includes("value") && <th className="p-4 font-semibold text-right">Value</th>}
-                      {visibleColumns.includes("todayPL") && <th className="p-4 font-semibold text-right">Today P&L $</th>}
-                      {visibleColumns.includes("todayPLPct") && <th className="p-4 font-semibold text-right">Today P&L %</th>}
-                      {visibleColumns.includes("totalPL") && <th className="p-4 font-semibold text-right">Total P&L $</th>}
-                      {visibleColumns.includes("totalPLPct") && <th className="p-4 font-semibold text-right">Total P&L %</th>}
-                      {visibleColumns.includes("weight") && <th className="p-4 font-semibold text-right">Weight %</th>}
+                      {allColumns
+                        .filter((col) => col.key !== "symbol" && visibleColumns.includes(col.key))
+                        .map((col) => (
+                          <th key={col.key} className="p-4 font-semibold text-right">
+                            {col.label}
+                          </th>
+                        ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
@@ -595,71 +668,9 @@ export default function Portfolio() {
                             </Link>
                           </td>
 
-                          {visibleColumns.includes("currentPrice") && (
-                            <td className="p-4 text-right">
-                              <div className="font-semibold">{fmt(asset.currentPrice)}</div>
-                              <div className={`text-xs ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                                {asset.todayChange?.ratio?.toFixed(2) ?? "0.00"}% 1D
-                              </div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("qty") && (
-                            <td className="p-4 text-right">
-                              <div className="font-semibold">{asset.qty.toFixed(4)}</div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("avgPrice") && (
-                            <td className="p-4 text-right">
-                              <div className="font-semibold">{fmt(asset.avgPrice)}</div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("value") && (
-                            <td className="p-4 text-right">
-                              <div className="font-semibold">{fmt(asset.value)}</div>
-                              <div className="text-xs text-muted-foreground">{(asset.weight * 100).toFixed(1)}% of portfolio</div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("todayPL") && (
-                            <td className="p-4 text-right">
-                              <div className={`font-semibold ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmt(asset.todayChange?.value ?? 0)}
-                              </div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("todayPLPct") && (
-                            <td className="p-4 text-right">
-                              <div className={`font-semibold ${asset.todayChange?.trend === "UP" ? "text-green-400" : asset.todayChange?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmtPct(asset.todayChange?.ratio ?? 0)}
-                              </div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("totalPL") && (
-                            <td className="p-4 text-right">
-                              <div className={`font-semibold ${asset.unrealizedPL?.trend === "UP" ? "text-green-400" : asset.unrealizedPL?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmt(asset.unrealizedPL?.value ?? 0)}
-                              </div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("totalPLPct") && (
-                            <td className="p-4 text-right">
-                              <div className={`font-semibold ${asset.unrealizedPL?.trend === "UP" ? "text-green-400" : asset.unrealizedPL?.trend === "DOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                                {fmtPct(asset.unrealizedPL?.ratio ?? 0)}
-                              </div>
-                            </td>
-                          )}
-
-                          {visibleColumns.includes("weight") && (
-                            <td className="p-4 text-right">
-                              <div className="font-semibold">{(asset.weight * 100).toFixed(1)}%</div>
-                            </td>
-                          )}
+                          {allColumns
+                            .filter((col) => col.key !== "symbol" && visibleColumns.includes(col.key))
+                            .map((col) => renderCell(asset, col.key))}
                         </motion.tr>
                       ))}
                     </AnimatePresence>
