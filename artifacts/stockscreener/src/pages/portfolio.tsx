@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Columns3, Pencil, Trash2 } from "lucide-react";
 import { usePortfolioColumns } from "@/hooks/use-portfolio-columns";
+import { RenamePortfolioDialog } from "@/components/rename-portfolio-dialog";
 import {
   useGetPortfolioById,
   useCreateTransaction,
@@ -58,6 +59,7 @@ export default function Portfolio() {
   const [editingTx, setEditingTx] = useState<TransactionResponseDto | null>(null);
   const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
   const [deletingTxIds, setDeletingTxIds] = useState<string[]>([]);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
 
   const search = useSearch();
   const currentPortfolioId = useMemo(() => new URLSearchParams(search).get('id'), [search]);
@@ -368,6 +370,14 @@ export default function Portfolio() {
         <div>
           <h1 className="text-4xl font-display font-extrabold tracking-tight mb-1 flex items-center gap-3 text-balance">
             <Briefcase className="w-8 h-8 text-primary shrink-0" /> {portfolioName}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => setRenameDialogOpen(true)}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
           </h1>
           <p className="text-muted-foreground">Manage holdings and track returns.</p>
         </div>
@@ -860,6 +870,13 @@ export default function Portfolio() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RenamePortfolioDialog
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
+        portfolioId={currentPortfolioId!}
+        currentName={portfolioName}
+      />
     </div>
   );
 }
