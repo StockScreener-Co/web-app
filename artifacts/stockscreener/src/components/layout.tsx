@@ -93,16 +93,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const search = useSearch();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { lastPortfolioId } = useLastPortfolio();
   const { lastWatchlistId } = useLastWatchlist();
   const { isOpen: watchlistSidebarOpen, toggle: toggleWatchlistSidebar } = useWatchlistSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: myPortfolios } = useGetMyPortfolios({
-    query: {
-      enabled: !!user,
-      queryKey: ["/api/v1/portfolios/my", user?.email],
-    },
-  });
 
   const currentWatchlistId = useMemo(
     () => new URLSearchParams(search).get("id"),
@@ -115,13 +108,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/", label: "Search", icon: Search },
-    {
-      href: user && lastPortfolioId && myPortfolios && myPortfolios.length > 0
-        ? `/portfolio?id=${lastPortfolioId}`
-        : "/portfolios",
-      label: "Portfolios",
-      icon: Briefcase
-    },
     {
       href: user && lastWatchlistId ? `/watchlist?id=${lastWatchlistId}` : "/watchlists",
       label: "Watchlist",

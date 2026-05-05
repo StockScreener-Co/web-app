@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { ApiError } from "@workspace/api-client-react";
 import { ArrowLeft, Plus, TrendingUp, TrendingDown, Activity, DollarSign, Loader2, BookmarkPlus, Building2, Users, MapPin, Newspaper, ExternalLink, Phone, Globe, Landmark, BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
@@ -197,7 +198,12 @@ export default function TickerDetail() {
 
       toast.success(`Added ${numShares} shares of ${ticker.symbol} to your portfolio.`);
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, "Failed to add position. Please try again."));
+      console.error("[AddPosition]", err);
+      if (err instanceof ApiError && err.status === 404) {
+        toast.error("Portfolio not found. It may have been deleted.");
+      } else {
+        toast.error(getApiErrorMessage(err, "Failed to add position. Please try again."));
+      }
     }
   };
 

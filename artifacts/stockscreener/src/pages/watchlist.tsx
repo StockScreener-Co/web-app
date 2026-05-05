@@ -431,8 +431,17 @@ export default function WatchlistPage() {
     query: {
       enabled: !!user && !!currentWatchlistId,
       queryKey: ["/api/v1/watchlists", currentWatchlistId],
+      meta: { suppressErrorToast: true },
     },
   });
+
+  // Stale localStorage ID: watchlist not found after load — clear and go to list
+  useEffect(() => {
+    if (user && currentWatchlistId && !isLoading && watchlist === undefined) {
+      updateLastWatchlistId(null);
+      setLocation("/watchlists");
+    }
+  }, [user, currentWatchlistId, isLoading, watchlist, updateLastWatchlistId, setLocation]);
 
   const { mutate: removeInstrument } = useRemoveInstrumentFromWatchlist({
     mutation: {

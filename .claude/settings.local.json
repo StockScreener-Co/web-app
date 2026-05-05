@@ -50,7 +50,10 @@
       "Bash(git -C \"D:\\\\Projects\\\\SS\\\\web-app\" commit -m \"fix: use isLocked for column filter and invalidate portfolio after edit\")",
       "Bash(C:\\\\Users\\\\Ozi\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh *)",
       "Bash(node *)",
-      "Bash(curl -s http://localhost:63463/)"
+      "Bash(curl -s http://localhost:63463/)",
+      "Bash(git *)",
+      "Bash(tsc -p artifacts/stockscreener/tsconfig.json --noEmit)",
+      "Bash(cd D:\\\\\\\\Projects\\\\\\\\SS\\\\\\\\web-app)"
     ]
   }
 }
