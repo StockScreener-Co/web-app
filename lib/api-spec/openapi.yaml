@@ -612,9 +612,12 @@ components:
           format: uuid
         name:
           type: string
+        holdingCount:
+          type: integer
       required:
         - id
         - name
+        - holdingCount
     PortfolioDetailsDto:
       type: object
       properties:
@@ -627,10 +630,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AssetDto"
+        totalValue:
+          type: number
+        annualIncome:
+          type: number
+        yieldOnCostRatio:
+          type: number
+        avgDivGrow5YRatio:
+          type: number
+        holdingCount:
+          type: integer
       required:
         - id
         - name
         - assets
+        - holdingCount
     AssetDto:
       type: object
       properties:

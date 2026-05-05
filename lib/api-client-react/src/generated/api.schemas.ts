@@ -52,6 +52,7 @@ export interface HealthStatus {
 export interface PortfolioDto {
   id: string;
   name: string;
+  holdingCount: number;
 }
 
 export type MetricCardTrend =
@@ -87,6 +88,11 @@ export interface PortfolioDetailsDto {
   id: string;
   name: string;
   assets: AssetDto[];
+  totalValue?: number;
+  annualIncome?: number;
+  yieldOnCostRatio?: number;
+  avgDivGrow5YRatio?: number;
+  holdingCount: number;
 }
 
 export interface PortfolioRequestDto {
