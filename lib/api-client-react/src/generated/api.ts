@@ -549,6 +549,93 @@ export function useGetPortfolioById<
 }
 
 /**
+ * @summary Update portfolio
+ */
+export const getUpdatePortfolioUrl = (id: string) => {
+  return `/api/v1/portfolios/${id}`;
+};
+
+export const updatePortfolio = async (
+  id: string,
+  portfolioRequestDto: PortfolioRequestDto,
+  options?: RequestInit,
+): Promise<PortfolioDto> => {
+  return customFetch<PortfolioDto>(getUpdatePortfolioUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(portfolioRequestDto),
+  });
+};
+
+export const getUpdatePortfolioMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePortfolio>>,
+    TError,
+    { id: string; data: BodyType<PortfolioRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePortfolio>>,
+  TError,
+  { id: string; data: BodyType<PortfolioRequestDto> },
+  TContext
+> => {
+  const mutationKey = ["updatePortfolio"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePortfolio>>,
+    { id: string; data: BodyType<PortfolioRequestDto> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePortfolio(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePortfolioMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePortfolio>>
+>;
+export type UpdatePortfolioMutationBody = BodyType<PortfolioRequestDto>;
+export type UpdatePortfolioMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update portfolio
+ */
+export const useUpdatePortfolio = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePortfolio>>,
+    TError,
+    { id: string; data: BodyType<PortfolioRequestDto> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePortfolio>>,
+  TError,
+  { id: string; data: BodyType<PortfolioRequestDto> },
+  TContext
+> => {
+  return useMutation(getUpdatePortfolioMutationOptions(options));
+};
+
+/**
  * @summary Delete portfolio
  */
 export const getDeletePortfolioUrl = (id: string) => {
