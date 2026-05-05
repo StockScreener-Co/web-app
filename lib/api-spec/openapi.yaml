@@ -108,6 +108,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PortfolioDetailsDto"
+    put:
+      operationId: updatePortfolio
+      tags: [portfolios]
+      summary: Update portfolio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioRequestDto"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioDto"
     delete:
       operationId: deletePortfolio
       tags: [portfolios]
