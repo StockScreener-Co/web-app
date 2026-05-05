@@ -31,7 +31,10 @@ function PortfolioDropdown() {
   });
 
   const search = useSearch();
-  const currentPortfolioIdFromUrl = useMemo(() => new URLSearchParams(search).get('id'), [search]);
+  const currentPortfolioIdFromUrl = useMemo(
+    () => (location === '/portfolio' ? new URLSearchParams(search).get('id') : null),
+    [search, location]
+  );
   const currentPortfolioId = currentPortfolioIdFromUrl || lastPortfolioId;
 
   const currentPortfolio = portfolios?.find(p => p.id === currentPortfolioId);
@@ -94,6 +97,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { lastWatchlistId } = useLastWatchlist();
   const { isOpen: watchlistSidebarOpen, toggle: toggleWatchlistSidebar } = useWatchlistSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: myPortfolios } = useGetMyPortfolios({
+    query: {
+      enabled: !!user,
+      queryKey: ["/api/v1/portfolios/my", user?.email],
+    },
+  });
 
   const currentWatchlistId = useMemo(
     () => new URLSearchParams(search).get("id"),
@@ -107,7 +116,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/", label: "Search", icon: Search },
     {
-      href: user && lastPortfolioId ? `/portfolio?id=${lastPortfolioId}` : "/portfolios",
+      href: user && lastPortfolioId && myPortfolios && myPortfolios.length > 0
+        ? `/portfolio?id=${lastPortfolioId}`
+        : "/portfolios",
       label: "Portfolios",
       icon: Briefcase
     },
