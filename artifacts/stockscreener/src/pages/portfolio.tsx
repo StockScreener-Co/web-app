@@ -35,6 +35,7 @@ import {
   useGetTransactionsForPortfolio,
   useUpdateTransaction,
   useDeleteTransactions,
+  useGetMyPortfolios,
 } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { OperationType, TransactionResponseDto } from "@/lib/api-client";
@@ -43,6 +44,13 @@ export default function Portfolio() {
   const { user } = useAuth();
   const { lastPortfolioId, updateLastPortfolioId } = useLastPortfolio();
   const [, setLocation] = useLocation();
+
+  const { data: myPortfolios, isLoading: isMyPortfoliosLoading, isError: isMyPortfoliosError } = useGetMyPortfolios({
+    query: {
+      enabled: !!user,
+      queryKey: ["/api/v1/portfolios/my", user?.email],
+    },
+  });
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ 
@@ -72,6 +80,14 @@ export default function Portfolio() {
     }
   }, [user, currentPortfolioId, lastPortfolioId, updateLastPortfolioId, setLocation]);
 
+  useEffect(() => {
+    if (!user || isMyPortfoliosLoading || isMyPortfoliosError) return;
+    if (myPortfolios && myPortfolios.length === 0) {
+      updateLastPortfolioId(null);
+      setLocation("/portfolios");
+    }
+  }, [user, myPortfolios, isMyPortfoliosLoading, isMyPortfoliosError, updateLastPortfolioId, setLocation]);
+
   const { visibleColumns, toggleColumn, allColumns, isLoading: isColumnsLoading } = usePortfolioColumns();
 
   const columnsParam = [...visibleColumns].sort().join(",");
@@ -83,6 +99,7 @@ export default function Portfolio() {
       query: {
         enabled: !!user && !!currentPortfolioId && visibleColumns.length > 0,
         queryKey: ["/api/v1/portfolios", currentPortfolioId, columnsParam],
+        meta: { suppressErrorToast: true },
       },
     }
   );
@@ -292,7 +309,7 @@ export default function Portfolio() {
       case "qty":
         return (
           <td key={key} className="p-4 text-right">
-            <div className="font-semibold">{(asset.qty ?? 0).toFixed(4)}</div>
+            <div className="font-semibold">{asset.qty ?? 0}</div>
           </td>
         );
       case "avgPrice":
@@ -359,9 +376,11 @@ export default function Portfolio() {
           </h1>
           <p className="text-muted-foreground">Manage holdings and track returns.</p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="shadow-lg shadow-primary/20 rounded-xl">
-          <Plus className="w-4 h-4 mr-2" /> Add Position
-        </Button>
+        {portfolio && (
+          <Button onClick={() => setShowAdd(true)} className="shadow-lg shadow-primary/20 rounded-xl">
+            <Plus className="w-4 h-4 mr-2" /> Add Position
+          </Button>
+        )}
       </div>
 
       {/* Add Position Dialog */}
