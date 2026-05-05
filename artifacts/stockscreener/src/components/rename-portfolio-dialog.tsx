@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useUpdatePortfolio } from "@workspace/api-client-react";
+import { useUpdatePortfolio, getGetMyPortfoliosQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -52,7 +52,10 @@ export function RenamePortfolioDialog({
     mutation: {
       onSuccess: () => {
         toast.success("Portfolio renamed successfully");
-        queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user?.email] });
+        queryClient.invalidateQueries({ queryKey: getGetMyPortfoliosQueryKey() });
+        if (user) {
+          queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user.email] });
+        }
         queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios", portfolioId] });
         onOpenChange(false);
       },
