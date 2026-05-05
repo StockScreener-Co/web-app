@@ -106,7 +106,9 @@ export default function PortfoliosList() {
                     <CardDescription>ID: {portfolio.id.slice(0, 8)}...</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-muted-foreground italic">Click to view details</p>
+                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                      {portfolio.holdingCount === 0 ? "No holdings" : `${portfolio.holdingCount} holdings`}
+                    </span>
                   </CardContent>
                 </Card>
               </Link>
