@@ -576,7 +576,7 @@ export default function Portfolio() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-2xl font-display font-bold flex items-center gap-2">
                 Holdings
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                   {portfolio?.holdingCount ?? assets.length}
                 </span>
               </h2>
