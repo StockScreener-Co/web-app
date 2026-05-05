@@ -24,7 +24,6 @@ import { useUpdatePortfolio, getGetMyPortfoliosQueryKey } from "@workspace/api-c
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is mandatory").max(100, "Max length 100 symbols"),
@@ -46,16 +45,12 @@ export function RenamePortfolioDialog({
   currentName,
 }: RenamePortfolioDialogProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const { mutate: updatePortfolio, isPending } = useUpdatePortfolio({
     mutation: {
       onSuccess: () => {
         toast.success("Portfolio renamed successfully");
         queryClient.invalidateQueries({ queryKey: getGetMyPortfoliosQueryKey() });
-        if (user) {
-          queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios/my", user.email] });
-        }
         queryClient.invalidateQueries({ queryKey: ["/api/v1/portfolios", portfolioId] });
         onOpenChange(false);
       },

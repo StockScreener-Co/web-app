@@ -374,6 +374,7 @@ export default function Portfolio() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              disabled={isLoading}
               onClick={() => setRenameDialogOpen(true)}
             >
               <Pencil className="w-4 h-4" />
