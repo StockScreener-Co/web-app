@@ -2,7 +2,7 @@ import { useGetMyPortfolios, useDeletePortfolio } from "@workspace/api-client-re
 import { useAuth } from "@/hooks/use-auth";
 import { useLastPortfolio } from "@/hooks/use-last-portfolio";
 import { Link } from "wouter";
-import { Briefcase, Plus, ChevronRight, Loader2, Trash2 } from "lucide-react";
+import { Briefcase, Plus, ChevronRight, Loader2, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { RenamePortfolioDialog } from "@/components/rename-portfolio-dialog";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -26,6 +27,7 @@ export default function PortfoliosList() {
   const { updateLastPortfolioId } = useLastPortfolio();
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
   const { data: portfolios, isLoading } = useGetMyPortfolios({
     query: {
       enabled: !!user,
@@ -108,6 +110,19 @@ export default function PortfoliosList() {
                   </CardContent>
                 </Card>
               </Link>
+              <div className="absolute top-4 right-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-full"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setRenameTarget({ id: portfolio.id, name: portfolio.name });
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </div>
               <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -179,9 +194,15 @@ export default function PortfoliosList() {
         </div>
       )}
 
-      <CreatePortfolioDialog 
-        open={createDialogOpen} 
-        onOpenChange={setCreateDialogOpen} 
+      <CreatePortfolioDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+      <RenamePortfolioDialog
+        open={!!renameTarget}
+        onOpenChange={(open) => { if (!open) setRenameTarget(null); }}
+        portfolioId={renameTarget?.id ?? ""}
+        currentName={renameTarget?.name ?? ""}
       />
     </div>
   );
