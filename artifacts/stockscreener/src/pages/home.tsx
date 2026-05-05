@@ -170,7 +170,7 @@ export default function Home() {
 
               <div className="mt-6 flex items-center gap-6 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> Free to use</span>
-                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> {user ? "Logged in" : "Sync across devices"}</span>
+                <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-primary" /> {user ? "Your data is saved" : "Sync across devices"}</span>
                 <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-primary" /> Real-time data</span>
               </div>
             </motion.div>

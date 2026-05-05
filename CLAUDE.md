@@ -102,3 +102,23 @@ Set via `setBaseUrl()` in `artifacts/stockscreener/src/main.tsx`:
 - **Frontend:** React 19, Vite 7, TanStack Query v5, Wouter, Tailwind CSS v4, Radix UI, Recharts, Framer Motion, React Hook Form, Zod
 - **UI extras:** Sonner (toasts), next-themes (dark/light mode), cmdk, vaul, embla-carousel, react-day-picker, react-resizable-panels, react-icons, lucide-react
 - **Tooling:** pnpm, TypeScript ~5.9, Orval (OpenAPI codegen)
+
+## Design System
+
+Full spec: `docs/DESIGN_SYSTEM.md`. **Read it before building any UI.** Key rules:
+
+- **Audience:** power users (operators). Dense, predictable, data-first — not consumer-friendly.
+- **Dark is home.** Dark theme gets primary design attention; light is fully supported.
+- **Color roles — never mix them:**
+  - Amber (`acc`) → interactive only (buttons, active state, focus). Never on financial data.
+  - Green (`bull`) / Red (`bear`) → financial change only. Always paired with a glyph (`▲`/`▼`).
+  - Grays → everything else.
+- **Surfaces via background level** (`bg-0` → `bg-3`), not shadows. No drop shadows.
+- **Typography:** Inter for UI text; IBM Plex Mono for all numbers in tables/displays. Only weights 400 and 500 (600 only for `display`/`h1`). Negative numbers use Unicode `−` (U+2212), not hyphen.
+- **Spacing:** 4px grid. No arbitrary values. Tight density — page padding 16–20px, cell padding 6–8px vertical.
+- **Radius:** never exceed 10px. This is a precision instrument.
+- **Icons:** Lucide only. Stroke 1.5–1.75. No mixing libraries.
+- **Tables:** monospace + `tabular-nums` for every number cell, always. Right-align numbers.
+- **Buttons:** one `primary` per visible region. Sentence case, never ALL CAPS.
+- **Loading:** skeleton blocks (`bg-2`), not spinners.
+- See `docs/DESIGN_SYSTEM.md §11` for the full anti-pattern list and `§12` for the new-screen checklist.

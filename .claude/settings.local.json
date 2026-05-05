@@ -43,7 +43,11 @@
       "Bash(git branch *)",
       "Bash(find D:\\\\\\\\Projects\\\\\\\\SS\\\\\\\\web-app -name \".env*\" -o -name \"*.env\")",
       "Bash(grep -r \"https://\" D:\\\\\\\\Projects\\\\\\\\SS\\\\\\\\web-app\\\\\\\\artifacts\\\\\\\\stockscreener\\\\\\\\src --include=\"*.tsx\" --include=\"*.ts\")",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(git -C \"D:/Projects/SS/web-app\" add artifacts/stockscreener/src/hooks/use-portfolio-columns.ts)",
+      "Bash(git -C D:/Projects/SS/web-app commit -m ' *)",
+      "Bash(git -C \"D:\\\\Projects\\\\SS\\\\web-app\" add artifacts/stockscreener/src/pages/portfolio.tsx)",
+      "Bash(git -C \"D:\\\\Projects\\\\SS\\\\web-app\" commit -m \"fix: use isLocked for column filter and invalidate portfolio after edit\")"
     ]
   }
 }

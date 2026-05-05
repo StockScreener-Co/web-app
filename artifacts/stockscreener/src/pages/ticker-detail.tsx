@@ -77,7 +77,7 @@ export default function TickerDetail() {
 
   const { data: companyProfile, isLoading: isProfileLoading } = useGetInstrumentProfile(
     instrumentId ?? "",
-    { query: { enabled: !!instrumentId && activeTab === "profile", queryKey: ["/api/v1/instruments", instrumentId, "profile"] } }
+    { query: { enabled: !!instrumentId && activeTab === "profile", queryKey: ["/api/v1/instruments", instrumentId, "profile"], meta: { suppressErrorToast: true } } }
   );
 
   const isLoading = isInstrumentLoading || (isSearchLoading && !isUuid);
@@ -148,7 +148,9 @@ export default function TickerDetail() {
   const isPositive = ticker.changeTrend
     ? ticker.changeTrend.toUpperCase() !== "DOWN"
     : ticker.change >= 0;
-  const chartColor = ticker.price > 0 ? (isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))') : 'hsl(var(--primary))';
+  const chartTrend = chartHistory?.trend;
+  const chartIsPositive = chartTrend ? chartTrend.toUpperCase() !== "DOWN" : isPositive;
+  const chartColor = ticker.price > 0 ? (chartIsPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))') : 'hsl(var(--primary))';
 
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
