@@ -242,26 +242,6 @@ export default function Portfolio() {
 
   const assets = portfolio?.assets || [];
 
-  const aggregates = useMemo(() => {
-    if (!assets.length) return null;
-    const totalValue = assets.reduce((s, a) => s + (a.value ?? 0), 0);
-    const todayPLDollar = assets.reduce((s, a) => s + (a.todayChange?.value ?? 0), 0);
-    const todayPLPct =
-      totalValue - todayPLDollar !== 0
-        ? (todayPLDollar / (totalValue - todayPLDollar)) * 100
-        : 0;
-    const totalPLDollar = assets.reduce((s, a) => s + (a.unrealizedPL?.value ?? 0), 0);
-    const totalCost = assets.reduce((s, a) => s + (a.qty ?? 0) * (a.avgPrice ?? 0), 0);
-    const totalPLPct = totalCost > 0 ? (totalPLDollar / totalCost) * 100 : 0;
-    return {
-      totalValue,
-      todayPLDollar,
-      todayPLPct,
-      totalPLDollar,
-      totalPLPct,
-      positionCount: assets.length,
-    };
-  }, [assets]);
 
   if (!user || !currentPortfolioId) {
     return (
@@ -307,9 +287,6 @@ export default function Portfolio() {
         return (
           <td key={key} className="p-4 text-right">
             <div className="font-semibold">{fmt(asset.currentPrice ?? 0)}</div>
-            <div className={`text-xs ${colorByTrend(asset.todayChange?.trend)}`}>
-              {asset.todayChange?.ratio?.toFixed(2) ?? "0.00"}% 1D
-            </div>
           </td>
         );
       case "qty":
@@ -563,42 +540,29 @@ export default function Portfolio() {
         </motion.div>
       ) : (
         <div className="space-y-8">
-          {/* Aggregates Header */}
-          {aggregates && (
-            <motion.div
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-            >
-              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Portfolio</p>
-                <p className="text-2xl font-bold tracking-tight">{fmt(aggregates.totalValue)}</p>
-              </div>
-              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Today P&L</p>
-                <p className={`text-2xl font-bold tracking-tight ${aggregates.todayPLDollar > 0 ? "text-green-400" : aggregates.todayPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                  {aggregates.todayPLDollar >= 0 ? "+" : ""}{fmt(aggregates.todayPLDollar)}
-                </p>
-                <p className={`text-sm font-medium ${aggregates.todayPLDollar > 0 ? "text-green-400" : aggregates.todayPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                  {aggregates.todayPLPct >= 0 ? "+" : ""}{aggregates.todayPLPct.toFixed(2)}%
-                </p>
-              </div>
-              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total P&L</p>
-                <p className={`text-2xl font-bold tracking-tight ${aggregates.totalPLDollar > 0 ? "text-green-400" : aggregates.totalPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                  {aggregates.totalPLDollar >= 0 ? "+" : ""}{fmt(aggregates.totalPLDollar)}
-                </p>
-                <p className={`text-sm font-medium ${aggregates.totalPLDollar > 0 ? "text-green-400" : aggregates.totalPLDollar < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                  {aggregates.totalPLPct >= 0 ? "+" : ""}{aggregates.totalPLPct.toFixed(2)}%
-                </p>
-              </div>
-              <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Holdings</p>
-                <p className="text-2xl font-bold tracking-tight">{aggregates.positionCount}</p>
-                <p className="text-sm text-muted-foreground">positions</p>
-              </div>
-            </motion.div>
-          )}
+          {/* Portfolio Summary */}
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total Value</p>
+              <p className="text-2xl font-bold tracking-tight">{fmt(portfolio?.totalValue ?? 0)}</p>
+            </div>
+            <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Annual Income</p>
+              <p className="text-2xl font-bold tracking-tight">{fmt(portfolio?.annualIncome ?? 0)}</p>
+            </div>
+            <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Yield on Cost</p>
+              <p className="text-2xl font-bold tracking-tight">{((portfolio?.yieldOnCostRatio ?? 0) * 100).toFixed(2)}%</p>
+            </div>
+            <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">5Y Div Growth</p>
+              <p className="text-2xl font-bold tracking-tight">{((portfolio?.avgDivGrow5YRatio ?? 0) * 100).toFixed(2)}%</p>
+            </div>
+          </motion.div>
 
           <Tabs defaultValue="holdings" onValueChange={() => setSelectedTxIds(new Set())}>
             <TabsList className="mb-4">
@@ -610,7 +574,12 @@ export default function Portfolio() {
             {/* Holdings Table */}
             <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-2xl font-display font-bold">Holdings</h2>
+              <h2 className="text-2xl font-display font-bold flex items-center gap-2">
+                Holdings
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                  {portfolio?.holdingCount ?? assets.length}
+                </span>
+              </h2>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
