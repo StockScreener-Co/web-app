@@ -13,20 +13,21 @@ import { toast } from "sonner";
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { login, register, loginWithGoogle, isLoading, user } = useAuth();
+
+  const [activeTab, setActiveTab] = useState("login");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerRepeatPassword, setRegisterRepeatPassword] = useState("");
+  const [registerFullName, setRegisterFullName] = useState("");
+
   // If user is already logged in, redirect to home
   if (user) {
     setLocation("/");
     return null;
   }
-
-  const [activeTab, setActiveTab] = useState("login");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerRepeatPassword, setRegisterRepeatPassword] = useState("");
-  const [registerFullName, setRegisterFullName] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +144,11 @@ export default function AuthPage() {
               <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={(res) => {
-                    if (res.credential) handleGoogleAuth(res.credential);
+                    if (res.credential) {
+                      handleGoogleAuth(res.credential);
+                    } else {
+                      toast.error("Google sign-in failed");
+                    }
                   }}
                   onError={() => toast.error("Google sign-in failed")}
                 />
@@ -215,7 +220,11 @@ export default function AuthPage() {
               <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={(res) => {
-                    if (res.credential) handleGoogleAuth(res.credential);
+                    if (res.credential) {
+                      handleGoogleAuth(res.credential);
+                    } else {
+                      toast.error("Google sign-in failed");
+                    }
                   }}
                   onError={() => toast.error("Google sign-in failed")}
                 />
