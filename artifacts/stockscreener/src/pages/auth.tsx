@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { GoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { toast } from "sonner";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const { login, register, isLoading, user } = useAuth();
+  const { login, register, loginWithGoogle, isLoading, user } = useAuth();
   // If user is already logged in, redirect to home
   if (user) {
     setLocation("/");
@@ -53,6 +54,16 @@ export default function AuthPage() {
       setLoginEmail(registerEmail);
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
+    }
+  };
+
+  const handleGoogleAuth = async (credential: string) => {
+    try {
+      await loginWithGoogle(credential);
+      toast.success("Welcome!");
+      setLocation("/");
+    } catch (error: any) {
+      toast.error(error.message || "Google sign-in failed");
     }
   };
 
@@ -120,6 +131,24 @@ export default function AuthPage() {
                 </Button>
               </CardFooter>
             </form>
+            <div className="px-6 pb-6 flex flex-col gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/40" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card/50 px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={(res) => {
+                    if (res.credential) handleGoogleAuth(res.credential);
+                  }}
+                  onError={() => toast.error("Google sign-in failed")}
+                />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="register">
@@ -174,6 +203,24 @@ export default function AuthPage() {
                 </Button>
               </CardFooter>
             </form>
+            <div className="px-6 pb-6 flex flex-col gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/40" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card/50 px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={(res) => {
+                    if (res.credential) handleGoogleAuth(res.credential);
+                  }}
+                  onError={() => toast.error("Google sign-in failed")}
+                />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </Card>
