@@ -53,7 +53,9 @@
       "Bash(curl -s http://localhost:63463/)",
       "Bash(git *)",
       "Bash(tsc -p artifacts/stockscreener/tsconfig.json --noEmit)",
-      "Bash(cd D:\\\\\\\\Projects\\\\\\\\SS\\\\\\\\web-app)"
+      "Bash(cd D:\\\\\\\\Projects\\\\\\\\SS\\\\\\\\web-app)",
+      "Bash(Test-Path *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
